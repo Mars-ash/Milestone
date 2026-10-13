@@ -388,47 +388,53 @@
                 </button>
             </div>
 
-            <!-- Konten Bagian Aktif -->
+            <!-- Konten Bagian Aktif (P01-T07: Komponen Daftar Bertingkat & Galeri) -->
             <div class="p-4 bg-[#F8FAFC] border border-[#E8ECF0] rounded-md text-xs">
                 @if($activeSection === 'problems')
-                    <div class="space-y-2">
-                        <div class="flex items-center justify-between">
-                            <span class="font-bold text-[#18212B]">Daftar Problem & Corrective Action</span>
-                            <span class="text-[11px] text-[#536170]">{{ count($problems) }} entri tercatat</span>
-                        </div>
-                        <p class="text-[11px] text-[#536170]">
-                            Banyak problem per progress; banyak corrective action per problem (P01-T07).
-                        </p>
-                    </div>
+                    <x-progress.problems :problems="$problems" />
                 @elseif($activeSection === 'next_actions')
-                    <div class="space-y-2">
-                        <div class="flex items-center justify-between">
-                            <span class="font-bold text-[#18212B]">Daftar Next Action</span>
-                            <span class="text-[11px] text-[#536170]">{{ count($nextActions) }} tindakan tercatat</span>
-                        </div>
-                        <p class="text-[11px] text-[#536170]">
-                            Next Action berdiri pada level progress terpisah dari problem (D07).
-                        </p>
-                    </div>
+                    <x-progress.next-actions :nextActions="$nextActions" />
                 @elseif($activeSection === 'feedback')
-                    <div class="space-y-2">
-                        <div class="flex items-center justify-between">
-                            <span class="font-bold text-[#18212B]">Feedback Customer</span>
-                            <span class="text-[11px] text-[#536170]">{{ count($feedbacks) }} tanggapan tercatat</span>
-                        </div>
-                        <p class="text-[11px] text-[#536170]">
-                            Tanggapan dan persetujuan dari pihak customer (D08).
-                        </p>
-                    </div>
+                    <x-progress.feedback :feedbacks="$feedbacks" />
                 @elseif($activeSection === 'attachments')
-                    <div class="space-y-2">
-                        <div class="flex items-center justify-between">
-                            <span class="font-bold text-[#18212B]">Lampiran Foto & File</span>
-                            <span class="text-[11px] text-[#536170]">{{ count($attachments) }} file terlampir</span>
+                    <div class="space-y-4">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-2 border-b border-[#E8ECF0]">
+                            <div>
+                                <h3 class="text-sm font-bold text-[#18212B] flex items-center gap-2">
+                                    <span>Lampiran Umum & Dokumen Pendukung (D12, D18, D19)</span>
+                                    <span class="text-xs font-semibold bg-[#FEF7E6] text-[#8A5B00] px-2 py-0.5 rounded border border-[#F8DDA4]">
+                                        {{ count($attachments) }} File
+                                    </span>
+                                </h3>
+                                <p class="text-xs text-[#536170] mt-0.5">
+                                    Mendukung foto baru (JPG, PNG, WebP), dokumen baru, serta arsip metadata dokumen lama Access (D18).
+                                </p>
+                            </div>
                         </div>
-                        <p class="text-[11px] text-[#536170]">
-                            Semua lampiran diberi label [SIMULASI] pada mode prototype.
-                        </p>
+
+                        <!-- Galeri Lampiran Umum -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                            <div class="p-3 bg-white rounded-md border border-[#D8DEE6] space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-bold text-xs text-[#18212B]">Format Uji Dimensi.pdf</span>
+                                    <span class="text-[10px] font-bold bg-[#FEF7E6] text-[#8A5B00] px-1.5 py-0.5 rounded border border-[#F8DDA4]">
+                                        [SIMULASI]
+                                    </span>
+                                </div>
+                                <p class="text-[11px] text-[#536170]">Laporan inspeksi CMM batch 1 (340 KB)</p>
+                                <div class="text-[10px] text-[#8C9BAE]">Arsip metadata lama &bull; Status: Tersimpan</div>
+                            </div>
+                            <div class="p-3 bg-white rounded-md border border-[#D8DEE6] space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-bold text-xs text-[#18212B]">Foto_Mold_Assembly.jpg</span>
+                                    <span class="text-[10px] font-bold bg-[#FEF7E6] text-[#8A5B00] px-1.5 py-0.5 rounded border border-[#F8DDA4]">
+                                        [SIMULASI]
+                                    </span>
+                                </div>
+                                <p class="text-[11px] text-[#536170]">Foto setting mold di mesin press (1.2 MB)</p>
+                                <div class="text-[10px] text-[#8C9BAE]">Dokumen baru &bull; Status: Upload Selesai</div>
+                            </div>
+                        </div>
                     </div>
                 @endif
             </div>

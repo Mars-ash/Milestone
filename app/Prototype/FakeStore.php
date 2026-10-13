@@ -760,6 +760,7 @@ class FakeStore
                 'id' => $probId,
                 'description' => $prob['description'] ?? '',
                 'order' => $prob['order'] ?? ($i + 1),
+                'photos' => $prob['photos'] ?? [],
                 'corrective_actions' => $actions,
             ];
         }

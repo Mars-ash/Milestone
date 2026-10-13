@@ -3,6 +3,7 @@
 namespace App\Livewire\Prototype;
 
 use App\Prototype\FakeStore;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 
@@ -245,6 +246,137 @@ class ProgressForm extends Component
     public function cancel()
     {
         return redirect()->to('?tab=dashboard');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Nested List Operations (FR07-FR11, AT07-AT11, D06-D09)
+    |--------------------------------------------------------------------------
+    */
+
+    public function addProblem(): void
+    {
+        $newId = 'prob-' . Str::lower(Str::random(5));
+        $this->problems[] = [
+            'id' => $newId,
+            'description' => '',
+            'order' => count($this->problems) + 1,
+            'photos' => [],
+            'corrective_actions' => [],
+        ];
+        $this->activeSection = 'problems';
+    }
+
+    public function removeProblem(string $problemId): void
+    {
+        $this->problems = array_values(array_filter(
+            $this->problems,
+            fn ($p) => ($p['id'] ?? '') !== $problemId
+        ));
+    }
+
+    public function addCorrectiveAction(string $problemId): void
+    {
+        foreach ($this->problems as &$prob) {
+            if (($prob['id'] ?? '') === $problemId) {
+                $prob['corrective_actions'][] = [
+                    'id' => 'act-' . Str::lower(Str::random(5)),
+                    'description' => '',
+                    'pic' => '',
+                    'actual_date' => null,
+                    'order' => count($prob['corrective_actions'] ?? []) + 1,
+                ];
+                break;
+            }
+        }
+        unset($prob);
+    }
+
+    public function removeCorrectiveAction(string $problemId, string $actionId): void
+    {
+        foreach ($this->problems as &$prob) {
+            if (($prob['id'] ?? '') === $problemId) {
+                $prob['corrective_actions'] = array_values(array_filter(
+                    $prob['corrective_actions'] ?? [],
+                    fn ($a) => ($a['id'] ?? '') !== $actionId
+                ));
+                break;
+            }
+        }
+        unset($prob);
+    }
+
+    public function addSimulationPhoto(string $problemId): void
+    {
+        foreach ($this->problems as &$prob) {
+            if (($prob['id'] ?? '') === $problemId) {
+                $nextNum = count($prob['photos'] ?? []) + 1;
+                $prob['photos'][] = [
+                    'id' => 'ph-' . Str::lower(Str::random(5)),
+                    'filename' => "simulasi_foto_{$nextNum}.jpg",
+                    'caption' => '',
+                    'path' => null,
+                    'thumbnail' => null,
+                    'is_simulation' => true,
+                ];
+                break;
+            }
+        }
+        unset($prob);
+    }
+
+    public function removeSimulationPhoto(string $problemId, string $photoId): void
+    {
+        foreach ($this->problems as &$prob) {
+            if (($prob['id'] ?? '') === $problemId) {
+                $prob['photos'] = array_values(array_filter(
+                    $prob['photos'] ?? [],
+                    fn ($ph) => ($ph['id'] ?? '') !== $photoId
+                ));
+                break;
+            }
+        }
+        unset($prob);
+    }
+
+    public function addNextAction(): void
+    {
+        $this->nextActions[] = [
+            'id' => 'next-' . Str::lower(Str::random(5)),
+            'description' => '',
+            'pic' => '',
+            'actual_date' => null,
+            'order' => count($this->nextActions) + 1,
+        ];
+        $this->activeSection = 'next_actions';
+    }
+
+    public function removeNextAction(string $actionId): void
+    {
+        $this->nextActions = array_values(array_filter(
+            $this->nextActions,
+            fn ($a) => ($a['id'] ?? '') !== $actionId
+        ));
+    }
+
+    public function addFeedback(): void
+    {
+        $this->feedbacks[] = [
+            'id' => 'fb-' . Str::lower(Str::random(5)),
+            'date' => date('Y-m-d'),
+            'pic' => '',
+            'content' => '',
+            'order' => count($this->feedbacks) + 1,
+        ];
+        $this->activeSection = 'feedback';
+    }
+
+    public function removeFeedback(string $feedbackId): void
+    {
+        $this->feedbacks = array_values(array_filter(
+            $this->feedbacks,
+            fn ($f) => ($f['id'] ?? '') !== $feedbackId
+        ));
     }
 
     public function render()

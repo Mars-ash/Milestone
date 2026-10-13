@@ -68,3 +68,18 @@ URL: `http://127.0.0.1:8000/prototype`
   - Mobile Form Top: `mobile_layout_top_1791876191714.png`
   - Mobile Form Bottom: `mobile_layout_bottom_1791876196625.png`
 
+---
+
+## 6. Evaluasi Komponen Bertingkat dan Galeri Foto (P01-T07)
+
+- **Struktur Dua Tingkat Problem & Corrective Action (FR07, AT07, D06):** Problem terbukti dapat ditambahkan berulang dengan penomoran urut label dinamis (Problem #1, #2). Corrective Action bersarang di dalam problem masing-masing dengan PIC teks bebas dan tanggal aktual (tanpa target date — D09, D16).
+- **Stabilitas Kunci & Independensi Graf:** Pengisian PIC berbeda pada beberapa tindakan dan penambahan problem baru terbukti tidak menukar nilai, tindakan, atau lampiran foto (AT07).
+- **Next Action sebagai Saudara Problem (FR08, AT08, D07):** Next Action berdiri langsung pada level progress secara mandiri tanpa terikat pada problem tertentu.
+- **Feedback Customer Berulang (FR09, AT09, D08):** Riwayat evaluasi customer dapat ditambahkan berulang dengan tanggal, PIC evaluator, dan uraian isi tanggapan.
+- **Galeri Foto & Lightbox Modal (FR10, FR11, FR19, AT10, AT26, D12):** Lampiran foto per problem menampilkan badge `[SIMULASI]`, input caption, serta dialog Lightbox modal yang dapat diperbesar dan ditutup via tombol Escape keyboard (UI10).
+- **Bukti Rekaman Sesi Browser:** `prototype_nested_test_1791876835358.webp`
+- **Screenshots:**
+  - Lightbox Modal Open: `lightbox_open_1791877040391.png`
+  - Form Loaded: `initial_form_loaded_1791876864025.png`
+
+
