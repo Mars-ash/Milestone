@@ -50,6 +50,7 @@ class ProgressForm extends Component
     public string $autosaveStatus = 'unsaved'; // unsaved, saving, saved, error
     public ?string $lastSavedTime = null;
     public bool $simulateSaveError = false; // Mode simulasi kegagalan simpan untuk pengujian UI07 / AT37
+    public bool $isClosed = false; // Closed memblokir edit langsung (D10, AT21)
 
     public ?string $successMessage = null;
 
@@ -62,6 +63,7 @@ class ProgressForm extends Component
         if ($this->progressId) {
             $progress = FakeStore::findProgress($this->progressId);
             if ($progress) {
+                $this->isClosed = strtolower($progress['status'] ?? 'open') === 'closed';
                 $this->projectId = $progress['project_id'] ?? '';
                 $this->activity = $progress['activity'] ?? 'Trial';
                 $this->activityDate = $progress['activity_date'] ?? date('Y-m-d');
@@ -156,6 +158,11 @@ class ProgressForm extends Component
         $allowed = ['Trial', 'Sent Sample', 'Send Document', 'Audit', 'Others'];
         if (! in_array($this->activity, $allowed, true)) {
             $errors['activity'] = 'Pilihan Activity tidak valid.';
+        }
+
+        if ($this->isClosed) {
+            $this->addError('save', 'Progress berstatus Closed tidak dapat diedit secara langsung. Klik tombol Reopen terlebih dahulu (D10, AT21).');
+            return;
         }
 
         if (! empty($errors)) {
@@ -306,6 +313,18 @@ class ProgressForm extends Component
     public function cancel()
     {
         return redirect()->to('?tab=dashboard');
+    }
+
+    /**
+     * Buka kembali progress Closed agar dapat diedit (D10, AT21, AT22).
+     */
+    public function reopenAndEnableEdit(): void
+    {
+        if ($this->progressId) {
+            FakeStore::reopenProgress($this->progressId);
+            $this->isClosed = false;
+            $this->successMessage = "Progress #{$this->progressId} telah dibuka kembali (Open). Seluruh data terjaga dan mode edit telah aktif.";
+        }
     }
 
     /*

@@ -190,87 +190,109 @@
         <livewire:prototype.progress-form :projectId="request()->query('project_id')" />
 
     @elseif($activeTab === 'progresses')
-        <!-- TAB: PROGRESS LIST -->
-        <div class="bg-white rounded-lg border border-[#D8DEE6] overflow-hidden shadow-2xs">
-            <div class="px-5 py-4 border-b border-[#D8DEE6] flex items-center justify-between">
-                <div>
-                    <h2 class="text-base font-bold text-[#18212B]">Seluruh Riwayat Progress</h2>
-                    <p class="text-xs text-[#536170] mt-0.5">Mencakup 5 Activity dan status Open/Closed.</p>
+        @if(request()->query('detail') || request()->query('id'))
+            <!-- Mode Detail Progress (P01-T09: Close & Reopen) -->
+            <livewire:prototype.progress-detail :progressId="request()->query('detail') ?? request()->query('id')" />
+        @else
+            <!-- TAB: PROGRESS LIST -->
+            <div class="bg-white rounded-lg border border-[#D8DEE6] overflow-hidden shadow-2xs">
+                <div class="px-5 py-4 border-b border-[#D8DEE6] flex items-center justify-between">
+                    <div>
+                        <h2 class="text-base font-bold text-[#18212B]">Seluruh Riwayat Progress</h2>
+                        <p class="text-xs text-[#536170] mt-0.5">Mencakup 5 Activity dan status Open/Closed.</p>
+                    </div>
                 </div>
-            </div>
 
-            <!-- Table Desktop -->
-            <div class="hidden sm:block overflow-x-auto">
-                <table class="w-full text-left border-collapse text-sm text-[#18212B]">
-                    <thead class="bg-[#F5F6F8] border-b border-[#D8DEE6] text-xs font-semibold text-[#536170] uppercase">
-                        <tr>
-                            <th class="px-4 py-3">JO No / Part</th>
-                            <th class="px-4 py-3">Activity</th>
-                            <th class="px-4 py-3">Tanggal</th>
-                            <th class="px-4 py-3">Uraian Catatan</th>
-                            <th class="px-4 py-3">Detail Temuan</th>
-                            <th class="px-4 py-3">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-[#D8DEE6]">
-                        @foreach($progresses as $prog)
-                            @php $proj = \App\Prototype\FakeStore::findProject($prog['project_id']); @endphp
-                            <tr class="hover:bg-[#F9FAFC] transition-colors">
-                                <td class="px-4 py-3 min-h-[44px]">
-                                    <div class="font-bold text-[#2459A6]">{{ $proj['jo_no'] ?? '-' }}</div>
-                                    <div class="text-xs text-[#536170]">{{ $proj['part_name'] ?? '-' }}</div>
-                                </td>
-                                <td class="px-4 py-3">
-                                    <x-ui.badge :type="$prog['activity']" :label="$prog['activity']" />
-                                </td>
-                                <td class="px-4 py-3 text-xs text-[#536170] whitespace-nowrap">
-                                    {{ $prog['activity_date'] }}
-                                </td>
-                                <td class="px-4 py-3 text-xs max-w-xs text-[#18212B]">
-                                    {{ Str::limit($prog['notes'], 120) }}
-                                </td>
-                                <td class="px-4 py-3 text-xs">
-                                    <div class="space-y-0.5">
-                                        @if(!empty($prog['problems']))
-                                            <div class="text-[#C0392B] font-medium">{{ count($prog['problems']) }} Problem</div>
-                                        @endif
-                                        @if(!empty($prog['next_actions']))
-                                            <div class="text-[#2459A6]">{{ count($prog['next_actions']) }} Next Action</div>
-                                        @endif
-                                        @if(!empty($prog['feedbacks']))
-                                            <div class="text-[#536170]">{{ count($prog['feedbacks']) }} Feedback</div>
-                                        @endif
-                                    </div>
-                                </td>
-                                <td class="px-4 py-3">
-                                    <x-ui.badge :type="$prog['status']" :label="$prog['status']" />
-                                </td>
+                <!-- Table Desktop -->
+                <div class="hidden sm:block overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-sm text-[#18212B]">
+                        <thead class="bg-[#F5F6F8] border-b border-[#D8DEE6] text-xs font-semibold text-[#536170] uppercase">
+                            <tr>
+                                <th class="px-4 py-3">JO No / Part</th>
+                                <th class="px-4 py-3">Activity</th>
+                                <th class="px-4 py-3">Tanggal</th>
+                                <th class="px-4 py-3">Uraian Catatan</th>
+                                <th class="px-4 py-3">Detail Temuan</th>
+                                <th class="px-4 py-3">Status</th>
+                                <th class="px-4 py-3 text-center">Aksi</th>
                             </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
+                        </thead>
+                        <tbody class="divide-y divide-[#D8DEE6]">
+                            @foreach($progresses as $prog)
+                                @php $proj = \App\Prototype\FakeStore::findProject($prog['project_id']); @endphp
+                                <tr class="hover:bg-[#F9FAFC] transition-colors">
+                                    <td class="px-4 py-3 min-h-[44px]">
+                                        <div class="font-bold text-[#2459A6]">{{ $proj['jo_no'] ?? '-' }}</div>
+                                        <div class="text-xs text-[#536170]">{{ $proj['part_name'] ?? '-' }}</div>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <x-ui.badge :type="$prog['activity']" :label="$prog['activity']" />
+                                    </td>
+                                    <td class="px-4 py-3 text-xs text-[#536170] whitespace-nowrap">
+                                        {{ $prog['activity_date'] }}
+                                    </td>
+                                    <td class="px-4 py-3 text-xs max-w-xs text-[#18212B]">
+                                        {{ Str::limit($prog['notes'], 120) }}
+                                    </td>
+                                    <td class="px-4 py-3 text-xs">
+                                        <div class="space-y-0.5">
+                                            @if(!empty($prog['problems']))
+                                                <div class="text-[#C0392B] font-medium">{{ count($prog['problems']) }} Problem</div>
+                                            @endif
+                                            @if(!empty($prog['next_actions']))
+                                                <div class="text-[#2459A6]">{{ count($prog['next_actions']) }} Next Action</div>
+                                            @endif
+                                            @if(!empty($prog['feedbacks']))
+                                                <div class="text-[#536170]">{{ count($prog['feedbacks']) }} Feedback</div>
+                                            @endif
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <x-ui.badge :type="$prog['status']" :label="$prog['status']" />
+                                    </td>
+                                    <td class="px-4 py-3 text-center whitespace-nowrap">
+                                        <a
+                                            href="?tab=progresses&detail={{ $prog['id'] }}"
+                                            class="px-3 py-1.5 text-xs font-semibold rounded border border-[#D8DEE6] text-[#2459A6] hover:bg-[#F0F4FA] transition-colors"
+                                        >
+                                            Detail
+                                        </a>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
 
-            <!-- Mobile Card Summary (< 768px / 390px) -->
-            <div class="block sm:hidden divide-y divide-[#D8DEE6]">
-                @foreach($progresses as $prog)
-                    @php $proj = \App\Prototype\FakeStore::findProject($prog['project_id']); @endphp
-                    <div class="p-4 bg-white space-y-2">
-                        <div class="flex items-center justify-between">
-                            <span class="font-bold text-sm text-[#2459A6]">{{ $proj['jo_no'] ?? '-' }}</span>
-                            <div class="flex items-center gap-1.5">
-                                <x-ui.badge :type="$prog['activity']" :label="$prog['activity']" />
-                                <x-ui.badge :type="$prog['status']" :label="$prog['status']" />
+                <!-- Mobile Card Summary (< 768px / 390px) -->
+                <div class="block sm:hidden divide-y divide-[#D8DEE6]">
+                    @foreach($progresses as $prog)
+                        @php $proj = \App\Prototype\FakeStore::findProject($prog['project_id']); @endphp
+                        <div class="p-4 bg-white space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="font-bold text-sm text-[#2459A6]">{{ $proj['jo_no'] ?? '-' }}</span>
+                                <div class="flex items-center gap-1.5">
+                                    <x-ui.badge :type="$prog['activity']" :label="$prog['activity']" />
+                                    <x-ui.badge :type="$prog['status']" :label="$prog['status']" />
+                                </div>
+                            </div>
+                            <div class="text-xs text-[#536170]">{{ $proj['part_name'] ?? '-' }} &bull; {{ $prog['activity_date'] }}</div>
+                            <div class="text-xs text-[#18212B] bg-[#F5F6F8] p-2 rounded">
+                                {{ Str::limit($prog['notes'], 100) }}
+                            </div>
+                            <div class="flex items-center justify-end pt-1">
+                                <a
+                                    href="?tab=progresses&detail={{ $prog['id'] }}"
+                                    class="px-3 py-1.5 text-xs font-semibold rounded border border-[#D8DEE6] text-[#2459A6] min-h-[44px] flex items-center"
+                                >
+                                    Buka Detail &amp; Status
+                                </a>
                             </div>
                         </div>
-                        <div class="text-xs text-[#536170]">{{ $proj['part_name'] ?? '-' }} &bull; {{ $prog['activity_date'] }}</div>
-                        <div class="text-xs text-[#18212B] bg-[#F5F6F8] p-2 rounded">
-                            {{ Str::limit($prog['notes'], 100) }}
-                        </div>
-                    </div>
-                @endforeach
+                    @endforeach
+                </div>
             </div>
-        </div>
+        @endif
 
     @elseif($activeTab === 'drafts')
         <!-- TAB: DRAFT (P01-T08: Manajemen Draft Mandiri) -->

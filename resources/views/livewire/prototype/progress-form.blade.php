@@ -53,10 +53,25 @@
             >
                 Batal
             </button>
+            @if($isClosed)
+                <button
+                    wire:click="reopenAndEnableEdit"
+                    type="button"
+                    class="px-4 py-2 text-xs font-semibold rounded-md bg-[#0E6B38] text-white hover:bg-[#0A532B] transition-colors shadow-2xs min-h-[44px] flex items-center gap-1.5"
+                    data-testid="reopen-form-btn"
+                >
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                    Buka Kembali (Reopen)
+                </button>
+            @endif
+
             <button
                 wire:click="save"
                 type="button"
-                class="px-5 py-2 text-xs font-semibold rounded-md bg-[#2459A6] text-white hover:bg-[#1D4785] transition-colors shadow-2xs min-h-[44px] flex items-center gap-1.5"
+                @if($isClosed) disabled @endif
+                class="px-5 py-2 text-xs font-semibold rounded-md {{ $isClosed ? 'bg-[#D8DEE6] text-[#8C9BAE] cursor-not-allowed' : 'bg-[#2459A6] text-white hover:bg-[#1D4785]' }} transition-colors shadow-2xs min-h-[44px] flex items-center gap-1.5"
                 data-testid="save-progress-btn"
             >
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -66,6 +81,28 @@
             </button>
         </div>
     </div>
+
+    <!-- Banner Peringatan Closed Form (AT21) -->
+    @if($isClosed)
+        <div class="m-5 p-3.5 rounded-md bg-[#F5F6F8] border border-[#D8DEE6] text-[#536170] text-xs font-medium flex items-center justify-between" data-testid="form-closed-banner">
+            <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-[#8C9BAE] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                </svg>
+                <span>Catatan progress ini berstatus <strong>Closed (Read-Only)</strong>. Klik tombol <strong>"Buka Kembali (Reopen)"</strong> di atas untuk mengaktifkan mode edit.</span>
+            </div>
+            <button wire:click="reopenAndEnableEdit" class="text-[#0E6B38] font-bold text-xs underline hover:no-underline shrink-0">
+                Reopen Sekarang
+            </button>
+        </div>
+    @endif
+
+    <!-- Error Simpan / Closed Error -->
+    @error('save')
+        <div class="m-5 p-3 rounded-md bg-[#FCE8E6] border border-[#F8D0CD] text-[#C5221F] text-xs font-medium">
+            {{ $message }}
+        </div>
+    @enderror
 
     <!-- Notifikasi Sukses -->
     @if($successMessage)

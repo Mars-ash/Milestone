@@ -99,6 +99,19 @@ URL: `http://127.0.0.1:8000/prototype`
   - Dashboard Keberlanjutan Data Lama: `dashboard_after_draft_1791878095265.png`
   - Modal Konfirmasi Buang Draft: `draft_discard_modal_1791878191064.png`
   - Draft List Mobile (390x844): `draft_list_mobile_390x844_1791878204540.png`
+---
 
+## 8. Evaluasi Detail Progress, Close, dan Reopen (P01-T09)
 
+- **Keputusan Eksplisit Admin (FR16, D10, AT20):** Tombol "Tutup Progress (Close)" tersedia dan sukses menutup catatan progress berstatus Open tanpa mempersyaratkan kelengkapan data (actual date, tindakan perbaikan, atau catatan feedback tetap diizinkan kosong). Hitungan statistik dashboard langsung beralih secara akurat (Open berkurang 1, Closed bertambah 1).
+- **Mode Read-Only & Proteksi Status Closed (AT21):** Progress dengan status Closed menampilkan banner peringatan read-only (`Progress ini berstatus Closed (Read-Only)`). Tombol "Edit Progress" otomatis dinonaktifkan (`Edit Dinonaktifkan (Closed)`) dan tombol "Buka Kembali (Reopen Progress)" dimunculkan. Mencoba memanggil aksi `save()` pada form berstatus Closed ditolak dengan pesan validasi yang jelas.
+- **Integritas Data Saat Reopen (AT22):** Mengklik "Buka Kembali (Reopen Progress)" mengembalikan status menjadi Open tanpa mereset data. Seluruh problem, tindakan perbaikan bersarang, lampiran foto, parameter mesin/DH, next action, dan feedback customer tetap utuh 100%. Mode edit kembali aktif.
+- **Isolasi Efek (D02, D10):** Perubahan status progress terisolasi penuh; record master project tidak terpengaruh dan progress kegiatan lain tidak berubah status.
+- **Responsivitas Mobile (390x844):** Tampilan halaman detail menyusun kartu-kartu identitas, parameter, problem, dan action secara vertikal rapi, bebas overflow horizontal, serta tombol aksi membungkus dengan touch-target &ge; 44px.
+- **Bukti Rekaman Sesi Browser:** `prototype_close_reopen_1791878811167.webp`
+- **Screenshots:**
+  - Detail Open Desktop: `detail_open_desktop_1791878822663.png`
+  - Detail Closed Desktop: `detail_closed_desktop_1791878998279.png`
+  - Detail Reopened Desktop: `detail_reopened_desktop_1791879013263.png`
+  - Detail Mobile (390x844): `detail_mobile_390x844_1791879024268.png`
 
