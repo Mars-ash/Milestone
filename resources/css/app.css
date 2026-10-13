@@ -2,8 +2,61 @@
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
+@source '../views/**/*.blade.php';
+@source '../../app/Livewire/**/*.php';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+    /* Palette PRD Bagian 6 (UI05) */
+    --color-canvas: #F5F6F8;
+    --color-surface: #FFFFFF;
+    --color-border-subtle: #D8DEE6;
+    --color-border-strong: #B0BCCB;
+    --color-text-main: #18212B;
+    --color-text-muted: #536170;
+    --color-primary: #2459A6;
+    --color-primary-hover: #1D4685;
+    --color-primary-light: #EBF2FA;
+
+    /* Status Tokens */
+    --color-status-open-bg: #EAF7EE;
+    --color-status-open-text: #0E6B38;
+    --color-status-open-border: #B6E6C3;
+
+    --color-status-closed-bg: #F0F2F5;
+    --color-status-closed-text: #536170;
+    --color-status-closed-border: #D8DEE6;
+
+    --color-status-draft-bg: #FEF7E6;
+    --color-status-draft-text: #8A5B00;
+    --color-status-draft-border: #F8DDA4;
+
+    --color-danger: #C0392B;
+    --color-danger-hover: #962D22;
+    --color-danger-light: #FDF2F1;
+}
+
+@layer base {
+    body {
+        background-color: var(--color-canvas);
+        color: var(--color-text-main);
+        font-family: var(--font-sans);
+        font-size: 14px;
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    /* Target sentuh & input mobile min 16px untuk cegah auto-zoom iOS */
+    @media (max-width: 640px) {
+        input, select, textarea {
+            font-size: 16px !important;
+        }
+    }
+
+    /* Keyboard accessibility visible focus */
+    :focus-visible {
+        outline: 2px solid var(--color-primary);
+        outline-offset: 2px;
+    }
 }

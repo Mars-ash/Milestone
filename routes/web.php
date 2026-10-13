@@ -16,7 +16,5 @@ Route::prefix('prototype')
     ->name('prototype.')
     ->middleware([EnsurePrototypeEnabled::class])
     ->group(function () {
-        Route::get('/', function () {
-            return view('prototype.index');
-        })->name('index');
+        Route::get('/', \App\Livewire\Prototype\Shell::class)->name('index');
     });
