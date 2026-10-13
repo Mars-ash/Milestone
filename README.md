@@ -82,3 +82,42 @@ Tampilan ditinjau pada desktop dan HP. Kerapian visual tidak cukup: pengguna har
 Gunakan dokumen docs/progress/P01.md sampai P07.md di repository aplikasi sebagai handoff. Formatnya tersedia di akhir setiap file fase. Catat command dan hasil test yang benar-benar dijalankan. Bug yang menyebabkan data hilang, salah relasi, duplikasi, Close otomatis, atau akses file tanpa login menghalangi rilis.
 
 Parameter OP01 sampai OP05 belum memblokir prototype. Tetapkan ketika fase terkait membutuhkannya. Kumpulkan pertanyaan untuk pemilik kebutuhan sekaligus agar pengembang tidak perlu bolak-balik menanyakan hal kecil. Jangan mengganti ketidakpastian dengan asumsi yang tidak dicatat.
+
+---
+
+## Cara Menjalankan Prototype (Fase 01)
+
+### Prasyarat Lingkungan
+- PHP `>= 8.4` dengan ekstensi standar Laravel
+- Composer `>= 2.8`
+- Node.js `>= 20.x` & npm
+
+### Langkah Instalasi & Menjalankan Aplikasi
+1. **Salin environment configuration:**
+   ```bash
+   cp .env.example .env
+   ```
+2. **Install dependensi PHP & generate app key:**
+   ```bash
+   composer install
+   php artisan key:generate
+   ```
+3. **Install dependensi Frontend & build asset:**
+   ```bash
+   npm install
+   npm run build
+   ```
+4. **Jalankan local development server:**
+   ```bash
+   php artisan serve
+   ```
+   *(Opsional jika ingin hot-reload asset Vite: buka terminal terpisah dan jalankan `npm run dev`)*
+
+5. **Akses Prototype:**
+   Buka browser ke `http://127.0.0.1:8000/prototype` (atau `http://127.0.0.1:8000/` yang akan mengarahkan otomatis ke prototype saat mode prototype aktif).
+
+### Menjalankan Uji Otomatis
+```bash
+php artisan test
+```
+

@@ -48,7 +48,7 @@ Baca PRD_Progress_New_Model.md: Bagian 2 sampai 12, 21 sampai 23; fokus UI01 sam
 
 ## Daftar task
 
-- [ ] P01-T01 Bootstrap workspace prototype dengan versi konsisten
+- [x] P01-T01 Bootstrap workspace prototype dengan versi konsisten
 - [ ] P01-T02 Susun fixture dan adapter data simulasi
 - [ ] P01-T03 Bangun fondasi visual dan navigasi yang ringkas
 - [ ] P01-T04 Prototype dashboard dan pencarian
