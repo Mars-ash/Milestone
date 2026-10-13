@@ -1,0 +1,468 @@
+{
+  "meta": {
+    "version": "1.0",
+    "description": "Dataset fiktif simulasi Prototype Progress New Model. Semua data murni rekaan.",
+    "is_simulation": true
+  },
+  "projects": [
+    {
+      "id": "proj-001",
+      "jo_no": "0012/NM/2026",
+      "part_no": "0091-XYZ-01",
+      "part_name": "BRACKET FRONT LH (FIKTIF)",
+      "customer": "PT ASTRA FIKTIF MOTOR",
+      "model": "K-FIKTIF-1",
+      "no_doc": "DOC-001/2026",
+      "event_1_date": "2026-02-15",
+      "event_2_date": "2026-04-20",
+      "event_3_date": "2026-06-10",
+      "t0_target_date": "2026-01-20",
+      "t0_actual_date": "2026-01-25",
+      "dh": "120,5 mm",
+      "size": "250 x 180",
+      "qty": "1.500 pcs"
+    },
+    {
+      "id": "proj-002",
+      "jo_no": "0450/NM/2026",
+      "part_no": "08234-K0100",
+      "part_name": "COVER SIDE LOWER (FIKTIF)",
+      "customer": "PT FIKTIF PRESISI INDONESIA",
+      "model": "MOD-X2",
+      "no_doc": "DOC-045/2026",
+      "event_1_date": "2026-03-01",
+      "event_2_date": "2026-05-15",
+      "event_3_date": "2026-07-20",
+      "t0_target_date": "2026-02-10",
+      "t0_actual_date": "2026-02-12",
+      "dh": "95.0 mm",
+      "size": "310 x 220",
+      "qty": "850 unit"
+    },
+    {
+      "id": "proj-003",
+      "jo_no": "1099/NM/2026",
+      "part_no": "99001-M5000",
+      "part_name": "STAY REAR COMB (FIKTIF)",
+      "customer": "PT GLOBAL AUTO FIKTIF",
+      "model": "GA-V3",
+      "no_doc": "DOC-109/2026",
+      "event_1_date": null,
+      "event_2_date": null,
+      "event_3_date": null,
+      "t0_target_date": "2026-05-01",
+      "t0_actual_date": null,
+      "dh": "150,75 mm",
+      "size": "180 x 120",
+      "qty": "2.200 unit"
+    }
+  ],
+  "progresses": [
+    {
+      "id": "prog-001",
+      "project_id": "proj-001",
+      "activity": "Trial",
+      "activity_date": "2026-03-10",
+      "status": "Open",
+      "notes": "Trial mold tahap 1 di mesin press 200T. Ditemukan burry pada flange sudut R1,5 dan celah stamping 1.5 mm.",
+      "revision": 1,
+      "problems": [
+        {
+          "id": "prob-001",
+          "description": "Burry berlebih pada flange sisi kiri setinggi 1,5 mm setelah stamping.",
+          "order": 1,
+          "corrective_actions": [
+            {
+              "id": "act-001",
+              "description": "Asah clearance die punch sisi kiri radius R2.",
+              "pic": "Budi Santoso (Fiktif)",
+              "actual_date": "2026-03-12",
+              "order": 1
+            },
+            {
+              "id": "act-002",
+              "description": "Cek tekanan cushion cylinder pada mesin press.",
+              "pic": "Agus Setiawan (Fiktif)",
+              "actual_date": "2026-03-13",
+              "order": 2
+            }
+          ]
+        },
+        {
+          "id": "prob-002",
+          "description": "Springback pada bending sudut 90 derajat selisih 1.5 derajat.",
+          "order": 2,
+          "corrective_actions": [
+            {
+              "id": "act-003",
+              "description": "Modifikasi sudut insert bending punch menjadi 88,5 derajat.",
+              "pic": "Hendra Wijaya (Fiktif)",
+              "actual_date": "2026-03-14",
+              "order": 1
+            },
+            {
+              "id": "act-004",
+              "description": "Trial ulang dengan material ketebalan t=1.5 mm.",
+              "pic": "Rian Pratama (Fiktif)",
+              "actual_date": null,
+              "order": 2
+            }
+          ]
+        }
+      ],
+      "next_actions": [
+        {
+          "id": "next-001",
+          "description": "Siapkan raw material SPCC ketebalan 1,5 mm untuk trial kedua.",
+          "pic": "Dewi Lestari (Fiktif)",
+          "actual_date": "2026-03-15",
+          "order": 1
+        },
+        {
+          "id": "next-002",
+          "description": "Konfirmasi kesiapan mesin press 250T dengan bagian maintenance.",
+          "pic": "Fajar Nugraha (Fiktif)",
+          "actual_date": null,
+          "order": 2
+        },
+        {
+          "id": "next-003",
+          "description": "Ukur ulang profil CMM untuk crosscheck dimensi 1.5 mm.",
+          "pic": "Siti Rahma (Fiktif)",
+          "actual_date": null,
+          "order": 3
+        }
+      ],
+      "feedbacks": [
+        {
+          "id": "fb-001",
+          "date": "2026-03-11",
+          "content": "Hasil trial awal cukup presisi namun burry harus dihilangkan sebelum kirim sample.",
+          "pic": "Irwan Customer (Fiktif)",
+          "order": 1
+        },
+        {
+          "id": "fb-002",
+          "date": "2026-03-14",
+          "content": "Dimensi lubang mounting sudah sesuai master drawing 2D rev 02.",
+          "pic": "Taufik QA Customer (Fiktif)",
+          "order": 2
+        }
+      ],
+      "attachments": [
+        {
+          "id": "att-001",
+          "type": "photo",
+          "filename": "simulasi_burry_flange.jpg",
+          "caption": "[SIMULASI] Foto kondisi burry 1,5 mm pada flange kiri",
+          "url": "/images/simulation/sample_burry.jpg",
+          "is_dummy": true
+        },
+        {
+          "id": "att-002",
+          "type": "photo",
+          "filename": "simulasi_hasil_cmm.png",
+          "caption": "[SIMULASI] Grafik pengukuran dimensi CMM",
+          "url": "/images/simulation/sample_cmm.png",
+          "is_dummy": true
+        }
+      ]
+    },
+    {
+      "id": "prog-002",
+      "project_id": "proj-001",
+      "activity": "Sent Sample",
+      "activity_date": "2026-03-20",
+      "status": "Closed",
+      "notes": "Pengiriman 5 pcs sample trial ke customer untuk evaluasi visual dan assembling fitment.",
+      "revision": 1,
+      "problems": [],
+      "next_actions": [
+        {
+          "id": "next-004",
+          "description": "Follow up feedback hasil uji pasang sample dari customer.",
+          "pic": "Dewi Lestari (Fiktif)",
+          "actual_date": "2026-03-25",
+          "order": 1
+        }
+      ],
+      "feedbacks": [
+        {
+          "id": "fb-003",
+          "date": "2026-03-24",
+          "content": "Sample diterima lengkap 5 pcs dalam kondisi baik tanpa cacat pengiriman.",
+          "pic": "Irwan Customer (Fiktif)",
+          "order": 1
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "prog-003",
+      "project_id": "proj-002",
+      "activity": "Send Document",
+      "activity_date": "2026-02-28",
+      "status": "Open",
+      "notes": "Pengiriman dokumen Inspection Standard Sheet (ISS) dan Quality Control Plan (QCP) rev 01 ke engineering customer.",
+      "revision": 1,
+      "problems": [
+        {
+          "id": "prob-003",
+          "description": "Simbol toleransi geometri pada poin 4 lembar ISS perlu diperjelas sesuai standar JIS terbaru.",
+          "order": 1,
+          "corrective_actions": [
+            {
+              "id": "act-005",
+              "description": "Revisi format gambar ISS halaman 2 dan kirimkan addendum.",
+              "pic": "Eko Prasetyo (Fiktif)",
+              "actual_date": "2026-03-02",
+              "order": 1
+            }
+          ]
+        }
+      ],
+      "next_actions": [],
+      "feedbacks": [],
+      "attachments": []
+    },
+    {
+      "id": "prog-004",
+      "project_id": "proj-002",
+      "activity": "Audit",
+      "activity_date": "2026-03-05",
+      "status": "Closed",
+      "notes": "Audit kesiapan lini produksi new model oleh tim audit eksternal. Semua parameter check sheet lolos verifikasi.",
+      "revision": 2,
+      "problems": [],
+      "next_actions": [],
+      "feedbacks": [
+        {
+          "id": "fb-004",
+          "date": "2026-03-05",
+          "content": "Lini perakitan memenuhi kriteria 5S dan standard packaging sudah disetujui.",
+          "pic": "Lead Auditor (Fiktif)",
+          "order": 1
+        }
+      ],
+      "attachments": []
+    },
+    {
+      "id": "prog-005",
+      "project_id": "proj-003",
+      "activity": "Others",
+      "activity_date": "2026-04-02",
+      "status": "Open",
+      "notes": "Meeting koordinasi penjadwalan kedatangan die casting tooling dari vendor luar negeri.",
+      "revision": 1,
+      "problems": [],
+      "next_actions": [
+        {
+          "id": "next-005",
+          "description": "Minta update resi pengiriman kargo laut tooling cetakan.",
+          "pic": "Budi Santoso (Fiktif)",
+          "actual_date": null,
+          "order": 1
+        }
+      ],
+      "feedbacks": [],
+      "attachments": []
+    },
+    {
+      "id": "prog-006",
+      "project_id": "proj-002",
+      "activity": "Trial",
+      "activity_date": "2025-08-10",
+      "status": "Closed",
+      "notes": "Trial tooling awal tahun lalu (catatan historis lama). Parameter temperatur injeksi plastik dievaluasi pada 210C.",
+      "revision": 1,
+      "problems": [
+        {
+          "id": "prob-004",
+          "description": "Sink mark tipis di area rib belakang.",
+          "order": 1,
+          "corrective_actions": [
+            {
+              "id": "act-006",
+              "description": "Tingkatkan holding pressure menjadi 65 bar selama 3 detik.",
+              "pic": "Teknisi Cetak (Fiktif)",
+              "actual_date": "2025-08-11",
+              "order": 1
+            }
+          ]
+        }
+      ],
+      "next_actions": [],
+      "feedbacks": [],
+      "attachments": []
+    },
+    {
+      "id": "prog-007",
+      "project_id": "proj-003",
+      "activity": "Sent Sample",
+      "activity_date": "2026-04-12",
+      "status": "Open",
+      "notes": "Pengiriman sample tahap validasi material baru dengan spesifikasi kekerasan HRC 42-45. Catatan detail ini memuat uraian panjang mengenai riwayat material alternatif yang diajukan oleh vendor lokal untuk mengantisipasi kelangkaan bahan baku impor. Uji ketahanan korosi (salt spray test 96 jam) sedang berjalan di laboratorium pengujian independen rekanan.",
+      "revision": 1,
+      "problems": [],
+      "next_actions": [
+        {
+          "id": "next-006",
+          "description": "Tunggu sertifikat uji laboratorium salt spray test.",
+          "pic": "Rian Pratama (Fiktif)",
+          "actual_date": null,
+          "order": 1
+        }
+      ],
+      "feedbacks": [],
+      "attachments": []
+    },
+    {
+      "id": "prog-008",
+      "project_id": "proj-001",
+      "activity": "Trial",
+      "activity_date": "2026-04-18",
+      "status": "Open",
+      "notes": "Trial lanjutan mold setelah perbaikan sudut clearance die punch. Dimensi sudah mendekati nominal drawing.",
+      "revision": 1,
+      "problems": [
+        {
+          "id": "prob-005",
+          "description": "Sedikit goresan halus pada permukaan luar part saat proses ejector pin bekerja.",
+          "order": 1,
+          "corrective_actions": [
+            {
+              "id": "act-007",
+              "description": "Poles kepala pin ejector dengan amplas grit 1000 dan kompon.",
+              "pic": "Agus Setiawan (Fiktif)",
+              "actual_date": "2026-04-19",
+              "order": 1
+            }
+          ]
+        }
+      ],
+      "next_actions": [
+        {
+          "id": "next-007",
+          "description": "Jadwalkan Sent Sample final ke customer.",
+          "pic": "Dewi Lestari (Fiktif)",
+          "actual_date": null,
+          "order": 1
+        }
+      ],
+      "feedbacks": [],
+      "attachments": []
+    }
+  ],
+  "drafts": [
+    {
+      "uuid": "draft-new-001",
+      "type": "new",
+      "progress_id": null,
+      "base_revision": null,
+      "project_id": "proj-002",
+      "activity": "Trial",
+      "activity_date": "2026-04-20",
+      "notes": "Draft isian trial mold baru yang belum selesai diisi penuh oleh admin...",
+      "problems": [
+        {
+          "id": "temp-prob-001",
+          "description": "Draf temuan suara abnormal saat pemotongan guillotine.",
+          "order": 1,
+          "corrective_actions": [
+            {
+              "id": "temp-act-001",
+              "description": "Cek pelumasan pisau potong.",
+              "pic": "Teknisi Sementara",
+              "actual_date": null,
+              "order": 1
+            }
+          ]
+        }
+      ],
+      "next_actions": [],
+      "feedbacks": [],
+      "attachments": [],
+      "updated_at": "2026-04-20T10:15:00+07:00"
+    },
+    {
+      "uuid": "draft-edit-001",
+      "type": "edit",
+      "progress_id": "prog-001",
+      "base_revision": 1,
+      "project_id": "proj-001",
+      "activity": "Trial",
+      "activity_date": "2026-03-10",
+      "notes": "Trial mold tahap 1 di mesin press 200T. Ditemukan burry pada flange sudut R1,5 dan celah stamping 1.5 mm. [DRAFT PERUBAHAN: Tambahan catatan pengecekan die]",
+      "problems": [
+        {
+          "id": "prob-001",
+          "description": "Burry berlebih pada flange sisi kiri setinggi 1,5 mm setelah stamping.",
+          "order": 1,
+          "corrective_actions": [
+            {
+              "id": "act-001",
+              "description": "Asah clearance die punch sisi kiri radius R2 (Draft update).",
+              "pic": "Budi Santoso (Fiktif)",
+              "actual_date": "2026-03-12",
+              "order": 1
+            },
+            {
+              "id": "act-002",
+              "description": "Cek tekanan cushion cylinder pada mesin press.",
+              "pic": "Agus Setiawan (Fiktif)",
+              "actual_date": "2026-03-13",
+              "order": 2
+            }
+          ]
+        },
+        {
+          "id": "prob-002",
+          "description": "Springback pada bending sudut 90 derajat selisih 1.5 derajat.",
+          "order": 2,
+          "corrective_actions": [
+            {
+              "id": "act-003",
+              "description": "Modifikasi sudut insert bending punch menjadi 88,5 derajat.",
+              "pic": "Hendra Wijaya (Fiktif)",
+              "actual_date": "2026-03-14",
+              "order": 1
+            },
+            {
+              "id": "act-004",
+              "description": "Trial ulang dengan material ketebalan t=1.5 mm.",
+              "pic": "Rian Pratama (Fiktif)",
+              "actual_date": null,
+              "order": 2
+            }
+          ]
+        }
+      ],
+      "next_actions": [
+        {
+          "id": "next-001",
+          "description": "Siapkan raw material SPCC ketebalan 1,5 mm untuk trial kedua.",
+          "pic": "Dewi Lestari (Fiktif)",
+          "actual_date": "2026-03-15",
+          "order": 1
+        },
+        {
+          "id": "next-002",
+          "description": "Konfirmasi kesiapan mesin press 250T dengan bagian maintenance.",
+          "pic": "Fajar Nugraha (Fiktif)",
+          "actual_date": null,
+          "order": 2
+        },
+        {
+          "id": "next-003",
+          "description": "Ukur ulang profil CMM untuk crosscheck dimensi 1.5 mm.",
+          "pic": "Siti Rahma (Fiktif)",
+          "actual_date": null,
+          "order": 3
+        }
+      ],
+      "feedbacks": [],
+      "attachments": [],
+      "updated_at": "2026-03-11T14:30:00+07:00"
+    }
+  ]
+}
