@@ -203,4 +203,72 @@ class FakeStoreTest extends TestCase
         $this->assertCount(3, FakeStore::getProjects());
         $this->assertCount(2, FakeStore::getDrafts());
     }
+
+    public function test_get_customers_returns_sorted_unique_customers(): void
+    {
+        $customers = FakeStore::getCustomers();
+
+        $this->assertCount(3, $customers);
+        $this->assertSame([
+            'PT ASTRA FIKTIF MOTOR',
+            'PT FIKTIF PRESISI INDONESIA',
+            'PT GLOBAL AUTO FIKTIF',
+        ], $customers);
+    }
+
+    public function test_get_global_stats_calculates_open_draft_and_month_activity_uniquely(): void
+    {
+        $statsOct = FakeStore::getGlobalStats('2026-10');
+
+        $this->assertSame(5, $statsOct['open_count'], 'Open count should be exactly 5');
+        $this->assertSame(2, $statsOct['draft_count'], 'Draft count should be exactly 2');
+        $this->assertSame(1, $statsOct['current_month_count'], 'October 2026 activity should be 1 (prog-008)');
+        $this->assertNotEmpty($statsOct['current_month_label']);
+
+        // Check March 2026 (prog-001, prog-002, prog-004)
+        $statsMar = FakeStore::getGlobalStats('2026-03');
+        $this->assertSame(3, $statsMar['current_month_count'], 'March 2026 activities should be 3');
+    }
+
+    public function test_get_progresses_default_sorting_oldest_first(): void
+    {
+        $all = FakeStore::getProgresses(['status' => 'all']);
+
+        $this->assertCount(8, $all);
+        $this->assertSame('prog-006', $all[0]['id'], 'Oldest progress (2025-08-10) should be first');
+        $this->assertSame('prog-008', $all[7]['id'], 'Newest progress (2026-10-10) should be last in oldest-first sort');
+
+        // Test newest sort
+        $newest = FakeStore::getProgresses(['status' => 'all', 'sort' => 'newest']);
+        $this->assertSame('prog-008', $newest[0]['id'], 'Newest progress (2026-10-10) should be first in newest sort');
+    }
+
+    public function test_pic_multi_role_search_returns_unique_progress_records(): void
+    {
+        // 1. Search PIC in 'progress' role
+        $resultsProg = FakeStore::getProgresses(['status' => 'all', 'pic' => 'Ahmad Fauzi', 'pic_role' => 'progress']);
+        $this->assertCount(1, $resultsProg);
+        $this->assertSame('prog-001', $resultsProg[0]['id']);
+
+        // 2. Search PIC in 'corrective_action' role on complex progress with 2 problems x 2 actions
+        $resultsAct = FakeStore::getProgresses(['status' => 'all', 'pic' => 'Budi Santoso', 'pic_role' => 'corrective_action']);
+        $this->assertCount(1, $resultsAct, 'Corrective action search should not multiply progress rows');
+        $this->assertSame('prog-001', $resultsAct[0]['id']);
+
+        // 3. Search PIC in 'next_action' role
+        $resultsNext = FakeStore::getProgresses(['status' => 'all', 'pic' => 'Dewi Lestari', 'pic_role' => 'next_action']);
+        // Dewi Lestari is in next_action for prog-001, prog-002, and prog-008
+        $this->assertCount(3, $resultsNext);
+        $ids = array_column($resultsNext, 'id');
+        $this->assertSame(count($ids), count(array_unique($ids)), 'Results must contain unique progress records');
+
+        // 4. Search PIC with 'all' roles
+        $resultsAll = FakeStore::getProgresses(['status' => 'all', 'pic' => 'Budi Santoso', 'pic_role' => 'all']);
+        // Budi Santoso is in corrective_action in prog-001, pic_progress and next_action in prog-005
+        $this->assertCount(2, $resultsAll);
+        $allIds = array_column($resultsAll, 'id');
+        $this->assertContains('prog-001', $allIds);
+        $this->assertContains('prog-005', $allIds);
+        $this->assertSame(2, count(array_unique($allIds)), 'Even with multiple roles in prog-005, prog-005 must appear exactly once');
+    }
 }

@@ -20,10 +20,10 @@ class PrototypeShellTest extends TestCase
     {
         Livewire::test(Shell::class)
             ->assertStatus(200)
-            ->assertSee('Total Project Master')
+            ->assertSee('Ringkasan Keseluruhan')
             ->assertSee('Progress Open')
-            ->assertSee('Progress Closed')
-            ->assertSee('Draft Tersimpan');
+            ->assertSee('Draft Tersimpan')
+            ->assertSee('Aktivitas Bulan Berjalan');
     }
 
     public function test_shell_switches_tabs(): void

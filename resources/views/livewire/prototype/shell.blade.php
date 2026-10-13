@@ -28,140 +28,49 @@
         </div>
     @endif
 
-    <!-- Tiga Angka Ringkas Ringkasan Kerja (PRD UI03) -->
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
-        <div class="bg-white p-4 rounded-lg border border-[#D8DEE6] shadow-2xs">
-            <div class="text-xs font-medium text-[#536170]">Total Project Master</div>
-            <div class="text-2xl font-bold text-[#18212B] mt-1">{{ $stats['total_projects'] ?? 0 }}</div>
-            <div class="text-[11px] text-[#536170] mt-0.5">Pasangan unik JO & Part No</div>
-        </div>
-
-        <div class="bg-white p-4 rounded-lg border border-[#D8DEE6] shadow-2xs">
-            <div class="text-xs font-medium text-[#0E6B38] flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-[#0E6B38]"></span>
-                Progress Open
+    <!-- Ringkasan Global Shell untuk Tab Non-Dashboard -->
+    @if($activeTab !== 'dashboard')
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
+            <div class="bg-white p-4 rounded-lg border border-[#D8DEE6] shadow-2xs">
+                <div class="text-xs font-medium text-[#536170]">Total Project Master</div>
+                <div class="text-2xl font-bold text-[#18212B] mt-1">{{ $stats['total_projects'] ?? 0 }}</div>
+                <div class="text-[11px] text-[#536170] mt-0.5">Pasangan unik JO & Part No</div>
             </div>
-            <div class="text-2xl font-bold text-[#0E6B38] mt-1">{{ $stats['open_count'] ?? 0 }}</div>
-            <div class="text-[11px] text-[#536170] mt-0.5">Memerlukan tindak lanjut</div>
-        </div>
 
-        <div class="bg-white p-4 rounded-lg border border-[#D8DEE6] shadow-2xs">
-            <div class="text-xs font-medium text-[#536170] flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-[#8C9BAE]"></span>
-                Progress Closed
+            <div class="bg-white p-4 rounded-lg border border-[#D8DEE6] shadow-2xs">
+                <div class="text-xs font-medium text-[#0E6B38] flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-[#0E6B38]"></span>
+                    Progress Open
+                </div>
+                <div class="text-2xl font-bold text-[#0E6B38] mt-1">{{ $stats['open_count'] ?? 0 }}</div>
+                <div class="text-[11px] text-[#536170] mt-0.5">Memerlukan tindak lanjut</div>
             </div>
-            <div class="text-2xl font-bold text-[#18212B] mt-1">{{ $stats['closed_count'] ?? 0 }}</div>
-            <div class="text-[11px] text-[#536170] mt-0.5">Ditutup manual oleh admin</div>
-        </div>
 
-        <div class="bg-white p-4 rounded-lg border border-[#D8DEE6] shadow-2xs">
-            <div class="text-xs font-medium text-[#8A5B00] flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-[#8A5B00]"></span>
-                Draft Tersimpan
+            <div class="bg-white p-4 rounded-lg border border-[#D8DEE6] shadow-2xs">
+                <div class="text-xs font-medium text-[#536170] flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-[#8C9BAE]"></span>
+                    Progress Closed
+                </div>
+                <div class="text-2xl font-bold text-[#18212B] mt-1">{{ $stats['closed_count'] ?? 0 }}</div>
+                <div class="text-[11px] text-[#536170] mt-0.5">Ditutup manual oleh admin</div>
             </div>
-            <div class="text-2xl font-bold text-[#8A5B00] mt-1">{{ $stats['draft_count'] ?? 0 }}</div>
-            <div class="text-[11px] text-[#536170] mt-0.5">Isian kerja belum final (D11)</div>
+
+            <div class="bg-white p-4 rounded-lg border border-[#D8DEE6] shadow-2xs">
+                <div class="text-xs font-medium text-[#8A5B00] flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-[#8A5B00]"></span>
+                    Draft Tersimpan
+                </div>
+                <div class="text-2xl font-bold text-[#8A5B00] mt-1">{{ $stats['draft_count'] ?? 0 }}</div>
+                <div class="text-[11px] text-[#536170] mt-0.5">Isian kerja belum final (D11)</div>
+            </div>
         </div>
-    </div>
+    @endif
 
     <!-- Tampilan Tab Berdasarkan State ($activeTab) -->
 
     @if($activeTab === 'dashboard')
-        <!-- TAB: DASHBOARD -->
-        <div class="space-y-6">
-            <div class="bg-white rounded-lg border border-[#D8DEE6] overflow-hidden shadow-2xs">
-                <div class="px-5 py-4 border-b border-[#D8DEE6] flex items-center justify-between bg-white">
-                    <div>
-                        <h2 class="text-base font-bold text-[#18212B]">Daftar Kerja: Progress Open</h2>
-                        <p class="text-xs text-[#536170] mt-0.5">Seluruh aktivitas new model yang masih berstatus Open dan aktif dikerjakan.</p>
-                    </div>
-                    <span class="text-xs font-medium bg-[#EBF2FA] text-[#2459A6] px-2.5 py-1 rounded">
-                        {{ $stats['open_count'] ?? 0 }} Kegiatan
-                    </span>
-                </div>
-
-                <!-- Desktop Table (>= 768px) -->
-                <div class="hidden sm:block overflow-x-auto">
-                    <table class="w-full text-left border-collapse text-sm text-[#18212B]">
-                        <thead class="bg-[#F5F6F8] border-b border-[#D8DEE6] text-xs font-semibold text-[#536170] uppercase">
-                            <tr>
-                                <th class="px-4 py-3">JO No / Part No</th>
-                                <th class="px-4 py-3">Customer / Model</th>
-                                <th class="px-4 py-3">Activity</th>
-                                <th class="px-4 py-3">Tanggal</th>
-                                <th class="px-4 py-3">Problem & Tindakan</th>
-                                <th class="px-4 py-3">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-[#D8DEE6] bg-white">
-                            @foreach($progresses as $prog)
-                                @if(strtolower($prog['status']) === 'open')
-                                    @php $proj = \App\Prototype\FakeStore::findProject($prog['project_id']); @endphp
-                                    <tr class="hover:bg-[#F9FAFC] transition-colors">
-                                        <td class="px-4 py-3 min-h-[44px]">
-                                            <div class="font-bold text-[#2459A6]">{{ $proj['jo_no'] ?? '-' }}</div>
-                                            <div class="text-xs text-[#536170] font-mono">{{ $proj['part_no'] ?? '-' }}</div>
-                                        </td>
-                                        <td class="px-4 py-3">
-                                            <div class="font-medium text-[#18212B]">{{ $proj['customer'] ?? '-' }}</div>
-                                            <div class="text-xs text-[#536170]">{{ $proj['model'] ?? '-' }}</div>
-                                        </td>
-                                        <td class="px-4 py-3">
-                                            <x-ui.badge :type="$prog['activity']" :label="$prog['activity']" />
-                                        </td>
-                                        <td class="px-4 py-3 text-xs text-[#536170] whitespace-nowrap">
-                                            {{ $prog['activity_date'] }}
-                                        </td>
-                                        <td class="px-4 py-3">
-                                            @if(!empty($prog['problems']))
-                                                <span class="inline-flex items-center text-xs text-[#C0392B] font-medium">
-                                                    {{ count($prog['problems']) }} Problem
-                                                </span>
-                                            @else
-                                                <span class="text-xs text-[#8C9BAE]">-</span>
-                                            @endif
-                                        </td>
-                                        <td class="px-4 py-3">
-                                            <x-ui.badge type="open" label="Open" />
-                                        </td>
-                                    </tr>
-                                @endif
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Mobile Card Summary (< 768px / 390px) -->
-                <div class="block sm:hidden divide-y divide-[#D8DEE6]">
-                    @foreach($progresses as $prog)
-                        @if(strtolower($prog['status']) === 'open')
-                            @php $proj = \App\Prototype\FakeStore::findProject($prog['project_id']); @endphp
-                            <div class="p-4 bg-white space-y-2">
-                                <div class="flex items-center justify-between">
-                                    <span class="font-bold text-sm text-[#2459A6]">{{ $proj['jo_no'] ?? '-' }}</span>
-                                    <x-ui.badge :type="$prog['activity']" :label="$prog['activity']" />
-                                </div>
-                                <div class="text-xs text-[#18212B]">
-                                    <strong>{{ $proj['part_name'] ?? '-' }}</strong> ({{ $proj['part_no'] ?? '-' }})
-                                </div>
-                                <div class="text-xs text-[#536170]">
-                                    {{ $proj['customer'] ?? '-' }} &bull; {{ $prog['activity_date'] }}
-                                </div>
-                                <div class="text-xs text-[#18212B] bg-[#F5F6F8] p-2 rounded">
-                                    {{ Str::limit($prog['notes'], 90) }}
-                                </div>
-                                <div class="flex items-center justify-between pt-1">
-                                    <span class="text-xs text-[#C0392B] font-medium">
-                                        {{ count($prog['problems'] ?? []) }} Problem
-                                    </span>
-                                    <x-ui.badge type="open" label="Open" />
-                                </div>
-                            </div>
-                        @endif
-                    @endforeach
-                </div>
-            </div>
-        </div>
+        <!-- TAB: DASHBOARD (P01-T04) -->
+        <livewire:prototype.dashboard />
 
     @elseif($activeTab === 'projects')
         <!-- TAB: PROJECT MASTER -->

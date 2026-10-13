@@ -121,7 +121,25 @@ class FakeStore
     */
 
     /**
-     * Get all progresses with optional filters.
+     * Get unique customer names sorted alphabetically.
+     *
+     * @return array<int, string>
+     */
+    public static function getCustomers(): array
+    {
+        $customers = [];
+        foreach (static::getProjects() as $p) {
+            if (! empty($p['customer']) && ! in_array($p['customer'], $customers, true)) {
+                $customers[] = $p['customer'];
+            }
+        }
+        sort($customers);
+
+        return $customers;
+    }
+
+    /**
+     * Get all progresses with optional filters and sorting.
      *
      * @param array<string, mixed> $filters
      * @return array<int, array<string, mixed>>
@@ -135,17 +153,26 @@ class FakeStore
             $progresses = array_filter($progresses, fn ($p) => $p['project_id'] === $filters['project_id']);
         }
 
-        // Filter by activity
-        if (! empty($filters['activity'])) {
-            $progresses = array_filter($progresses, fn ($p) => $p['activity'] === $filters['activity']);
+        // Filter by customer
+        if (! empty($filters['customer'])) {
+            $targetCustomer = strtolower(trim($filters['customer']));
+            $progresses = array_filter($progresses, function ($p) use ($targetCustomer) {
+                $project = static::findProject($p['project_id']);
+                return strtolower(trim($project['customer'] ?? '')) === $targetCustomer;
+            });
         }
 
-        // Filter by status (Open / Closed)
-        if (! empty($filters['status'])) {
+        // Filter by activity (Trial, Sent Sample, Send Document, Audit, Others)
+        if (! empty($filters['activity']) && ! in_array(strtolower($filters['activity']), ['all', 'semua'], true)) {
+            $progresses = array_filter($progresses, fn ($p) => strtolower($p['activity']) === strtolower($filters['activity']));
+        }
+
+        // Filter by status (Open / Closed). If empty or 'all'/'semua', do not filter.
+        if (! empty($filters['status']) && ! in_array(strtolower($filters['status']), ['all', 'semua'], true)) {
             $progresses = array_filter($progresses, fn ($p) => strtolower($p['status']) === strtolower($filters['status']));
         }
 
-        // Filter by search keyword
+        // Filter by search keyword (JO, Part No, Part Name, Customer, Notes, Problems)
         if (! empty($filters['search'])) {
             $keyword = strtolower(trim($filters['search']));
             $progresses = array_filter($progresses, function ($p) use ($keyword) {
@@ -175,7 +202,92 @@ class FakeStore
             });
         }
 
-        return array_values($progresses);
+        // Filter by PIC and PIC Role (FR18, AT24) - Guarantees unique progress records
+        if (! empty($filters['pic'])) {
+            $picKw = strtolower(trim($filters['pic']));
+            $role = strtolower(trim($filters['pic_role'] ?? 'progress'));
+
+            $progresses = array_filter($progresses, function ($p) use ($picKw, $role) {
+                $matchProgress = str_contains(strtolower($p['pic_progress'] ?? ''), $picKw);
+
+                $matchCorrective = false;
+                foreach ($p['problems'] ?? [] as $prob) {
+                    foreach ($prob['corrective_actions'] ?? [] as $act) {
+                        if (str_contains(strtolower($act['pic'] ?? ''), $picKw)) {
+                            $matchCorrective = true;
+                            break 2;
+                        }
+                    }
+                }
+
+                $matchNextAction = false;
+                foreach ($p['next_actions'] ?? [] as $na) {
+                    if (str_contains(strtolower($na['pic'] ?? ''), $picKw)) {
+                        $matchNextAction = true;
+                        break;
+                    }
+                }
+
+                $matchFeedback = false;
+                foreach ($p['feedbacks'] ?? [] as $fb) {
+                    if (str_contains(strtolower($fb['pic'] ?? ''), $picKw)) {
+                        $matchFeedback = true;
+                        break;
+                    }
+                }
+
+                return match ($role) {
+                    'progress' => $matchProgress,
+                    'corrective_action' => $matchCorrective,
+                    'next_action' => $matchNextAction,
+                    'feedback' => $matchFeedback,
+                    'all' => $matchProgress || $matchCorrective || $matchNextAction || $matchFeedback,
+                    default => $matchProgress,
+                };
+            });
+        }
+
+        // Convert to indexed array
+        $result = array_values($progresses);
+
+        // Sort: default 'oldest' (FR18). Oldest activity_date first, null dates at the end, secondary order by ID
+        $sort = strtolower(trim($filters['sort'] ?? 'oldest'));
+        usort($result, function ($a, $b) use ($sort) {
+            $dateA = $a['activity_date'] ?? null;
+            $dateB = $b['activity_date'] ?? null;
+
+            if (empty($dateA) && ! empty($dateB)) {
+                return 1;
+            }
+            if (! empty($dateA) && empty($dateB)) {
+                return -1;
+            }
+            if (empty($dateA) && empty($dateB)) {
+                return strcmp($a['id'] ?? '', $b['id'] ?? '');
+            }
+
+            if ($sort === 'newest') {
+                $cmp = strcmp($dateB, $dateA);
+            } else {
+                $cmp = strcmp($dateA, $dateB);
+            }
+
+            if ($cmp !== 0) {
+                return $cmp;
+            }
+
+            return strcmp($a['id'] ?? '', $b['id'] ?? '');
+        });
+
+        // Enrich each progress with related project and safe fallbacks for convenient display
+        foreach ($result as &$item) {
+            $item['pic_progress'] = $item['pic_progress'] ?? '';
+            $item['pic_customer'] = $item['pic_customer'] ?? null;
+            $item['project'] = static::findProject($item['project_id']);
+        }
+        unset($item);
+
+        return $result;
     }
 
     /**
@@ -187,7 +299,9 @@ class FakeStore
     {
         foreach (static::all()['progresses'] ?? [] as $progress) {
             if ($progress['id'] === $id) {
-                // Enrich with project details
+                // Enrich with project details and safe fallbacks
+                $progress['pic_progress'] = $progress['pic_progress'] ?? '';
+                $progress['pic_customer'] = $progress['pic_customer'] ?? null;
                 $progress['project'] = static::findProject($progress['project_id']);
                 return $progress;
             }
@@ -228,6 +342,8 @@ class FakeStore
             'project_id' => $data['project_id'] ?? $existing['project_id'] ?? '',
             'activity' => $data['activity'] ?? $existing['activity'] ?? 'Trial',
             'activity_date' => $data['activity_date'] ?? $existing['activity_date'] ?? date('Y-m-d'),
+            'pic_progress' => $data['pic_progress'] ?? $existing['pic_progress'] ?? '',
+            'pic_customer' => $data['pic_customer'] ?? $existing['pic_customer'] ?? null,
             'status' => $existing['status'] ?? 'Open',
             'notes' => $data['notes'] ?? $existing['notes'] ?? '',
             'revision' => ($existing['revision'] ?? 0) + 1,
@@ -412,6 +528,59 @@ class FakeStore
             'open_count' => $openCount,
             'closed_count' => $closedCount,
             'draft_count' => count(static::getDrafts()),
+        ];
+    }
+
+    /**
+     * Get global dashboard summary stats according to FR17 & AT23.
+     * Returns:
+     * - open_count: Progress Open tersimpan (excluding drafts)
+     * - draft_count: Draft aktif (new and edit)
+     * - current_month_count: Aktivitas tersimpan dalam bulan kalender Asia/Jakarta (Open + Closed, excluding drafts, excluding legacy null dates)
+     * - current_month_label: Label periode kalender (e.g. "Oktober 2026")
+     * - year_month: Format 'Y-m' yang dievaluasi
+     *
+     * @param string|null $yearMonth Format 'Y-m' (defaults to Asia/Jakarta current month)
+     * @return array<string, mixed>
+     */
+    public static function getGlobalStats(?string $yearMonth = null): array
+    {
+        $progresses = static::all()['progresses'] ?? [];
+        $drafts = static::getDrafts();
+
+        $openCount = 0;
+        foreach ($progresses as $p) {
+            if (strtolower($p['status'] ?? '') === 'open') {
+                $openCount++;
+            }
+        }
+
+        $draftCount = count($drafts);
+
+        $now = \Illuminate\Support\Carbon::now('Asia/Jakarta');
+        $targetYm = $yearMonth ?: $now->format('Y-m');
+
+        if ($yearMonth) {
+            $parsed = \Illuminate\Support\Carbon::createFromFormat('Y-m', $yearMonth, 'Asia/Jakarta');
+            $monthLabel = $parsed ? $parsed->translatedFormat('F Y') : $yearMonth;
+        } else {
+            $monthLabel = $now->translatedFormat('F Y');
+        }
+
+        $currentMonthCount = 0;
+        foreach ($progresses as $p) {
+            $date = $p['activity_date'] ?? null;
+            if (! empty($date) && str_starts_with($date, $targetYm)) {
+                $currentMonthCount++;
+            }
+        }
+
+        return [
+            'open_count' => $openCount,
+            'draft_count' => $draftCount,
+            'current_month_count' => $currentMonthCount,
+            'current_month_label' => $monthLabel,
+            'year_month' => $targetYm,
         ];
     }
 
