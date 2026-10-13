@@ -438,6 +438,23 @@ class FakeStore
         $isNew = empty($data['id']);
         $id = $isNew ? 'prog-' . Str::lower(Str::random(6)) : $data['id'];
 
+        if ($isNew) {
+            $errors = [];
+            if (empty(trim($data['project_id'] ?? ''))) {
+                $errors['project_id'] = ['JO No wajib dipilih.'];
+            }
+            if (isset($data['activity_date']) && $data['activity_date'] === '') {
+                $errors['activity_date'] = ['Tanggal Aktivitas wajib diisi.'];
+            }
+            $allowedActivities = ['Trial', 'Sent Sample', 'Send Document', 'Audit', 'Others'];
+            if (! empty($data['activity']) && ! in_array($data['activity'], $allowedActivities, true)) {
+                $errors['activity'] = ['Activity wajib dipilih dari salah satu: Trial, Sent Sample, Send Document, Audit, Others.'];
+            }
+            if (! empty($errors)) {
+                throw \Illuminate\Validation\ValidationException::withMessages($errors);
+            }
+        }
+
         $existingIndex = null;
         if (! $isNew) {
             foreach ($progresses as $idx => $p) {
@@ -450,7 +467,8 @@ class FakeStore
 
         $existing = $existingIndex !== null ? $progresses[$existingIndex] : [];
 
-        // Build normalized progress record
+        // Build normalized progress record according to Section 16 of PRD
+        $notesContent = $data['notes'] ?? $data['description'] ?? $existing['notes'] ?? '';
         $record = [
             'id' => $id,
             'project_id' => $data['project_id'] ?? $existing['project_id'] ?? '',
@@ -459,7 +477,17 @@ class FakeStore
             'pic_progress' => $data['pic_progress'] ?? $existing['pic_progress'] ?? '',
             'pic_customer' => $data['pic_customer'] ?? $existing['pic_customer'] ?? null,
             'status' => $existing['status'] ?? 'Open',
-            'notes' => $data['notes'] ?? $existing['notes'] ?? '',
+            'notes' => $notesContent,
+            'description' => $notesContent,
+            'process_trial' => $data['process_trial'] ?? $existing['process_trial'] ?? null,
+            'machine' => $data['machine'] ?? $existing['machine'] ?? null,
+            'die_high_raw' => $data['die_high_raw'] ?? $data['dh'] ?? $existing['die_high_raw'] ?? $existing['dh'] ?? null,
+            'material_actual_trial' => $data['material_actual_trial'] ?? $existing['material_actual_trial'] ?? null,
+            'qty_material_raw' => $data['qty_material_raw'] ?? $existing['qty_material_raw'] ?? null,
+            'qty_process_raw' => $data['qty_process_raw'] ?? $existing['qty_process_raw'] ?? null,
+            'qty_sample_raw' => $data['qty_sample_raw'] ?? $existing['qty_sample_raw'] ?? null,
+            'event_note' => $data['event_note'] ?? $existing['event_note'] ?? null,
+            'remark' => $data['remark'] ?? $existing['remark'] ?? null,
             'revision' => ($existing['revision'] ?? 0) + 1,
             'problems' => static::normalizeProblems($data['problems'] ?? $existing['problems'] ?? []),
             'next_actions' => static::normalizeNextActions($data['next_actions'] ?? $existing['next_actions'] ?? []),

@@ -162,9 +162,20 @@
                         Identitas progress selalu merujuk dinamis ke master terkini (FR02, AT03).
                     </p>
                 </div>
-                <span class="text-xs font-semibold bg-[#EBF2FA] text-[#2459A6] px-2.5 py-1 rounded">
-                    {{ count($progresses) }} Kegiatan
-                </span>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-semibold bg-[#EBF2FA] text-[#2459A6] px-2.5 py-1 rounded">
+                        {{ count($progresses) }} Kegiatan
+                    </span>
+                    <a
+                        href="?tab=form&project_id={{ $project['id'] }}"
+                        class="px-3 py-1.5 text-xs font-semibold rounded bg-[#2459A6] text-white hover:bg-[#1D4785] transition-colors shadow-2xs min-h-[44px] sm:min-h-0 flex items-center gap-1"
+                    >
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        + Catat Progress
+                    </a>
+                </div>
             </div>
 
             @if(count($progresses) > 0)

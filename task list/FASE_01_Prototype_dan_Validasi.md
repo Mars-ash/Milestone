@@ -53,7 +53,7 @@ Baca PRD_Progress_New_Model.md: Bagian 2 sampai 12, 21 sampai 23; fokus UI01 sam
 - [x] P01-T03 Bangun fondasi visual dan navigasi yang ringkas
 - [x] P01-T04 Prototype dashboard dan pencarian
 - [x] P01-T05 Prototype master project dan identitas terkini
-- [ ] P01-T06 Prototype form progress yang sama pada semua Activity
+- [x] P01-T06 Prototype form progress yang sama pada semua Activity
 - [ ] P01-T07 Prototype daftar bertingkat dan galeri
 - [ ] P01-T08 Prototype autosave draft dan Simpan
 - [ ] P01-T09 Prototype detail Close dan Reopen

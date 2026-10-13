@@ -53,3 +53,18 @@ URL: `http://127.0.0.1:8000/prototype`
 
 - Sesi verifikasi browser otomatis tersimpan pada artifact:  
   `prototype_visual_p03_1791871625824.webp`
+
+---
+
+## 5. Evaluasi Visual & Form Interaktif (P01-T06: 1 Form Semua Activity)
+
+- **Verifikasi Kontrak FR04 / AT05:** 1 Form terpadu digunakan untuk 5 pilihan Activity (`Trial`, `Sent Sample`, `Send Document`, `Audit`, `Others`). Mengganti Activity terbukti mempertahankan isian parameter lapangan (Mesin, DH, Process Trial, Qty, Event Note, Remark).
+- **Autofill Identitas Terkini (FR02, AT03):** Memilih JO No menampilkan 5 kartu identitas hanya-baca (Part No, Part Name, Customer, Model, No Doc) yang diambil secara dinamis dari Project Master.
+- **Dukungan Format Raw Text (FR05, AT06):** Input PIC teks bebas tanpa ketergantungan akun/tabel user; angka desimal dengan koma dan titik (`120,5 mm`, `1,5`) tersimpan apa adanya.
+- **Responsivitas Form Mobile (390x844):** Seluruh input, textarea, sub-tab problem/action/feedback/lampiran, dan tombol aksi terstruktur vertikal tanpa overflow horizontal; tinggi tombol &ge; 44px memenuhi standar touch-target.
+- **Bukti Rekaman Sesi Browser Form:** `prototype_form_test_1791876041924.webp`
+- **Screenshots:**
+  - Desktop Draft Saved: `draft_saved_desktop_1791876183635.png`
+  - Mobile Form Top: `mobile_layout_top_1791876191714.png`
+  - Mobile Form Bottom: `mobile_layout_bottom_1791876196625.png`
+

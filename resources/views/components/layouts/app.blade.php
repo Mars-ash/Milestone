@@ -61,6 +61,16 @@
                 </a>
 
                 <a
+                    href="{{ route('prototype.index', ['tab' => 'form']) }}"
+                    class="min-h-[44px] flex items-center px-3 py-2 border-b-2 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap {{ request('tab') === 'form' ? 'border-[#2459A6] text-[#2459A6]' : 'border-transparent text-[#536170] hover:text-[#18212B] hover:border-[#D8DEE6]' }}"
+                >
+                    <svg class="w-4 h-4 mr-1.5 inline shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                    </svg>
+                    Input Progress
+                </a>
+
+                <a
                     href="{{ route('prototype.index', ['tab' => 'progresses']) }}"
                     class="min-h-[44px] flex items-center px-3 py-2 border-b-2 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap {{ request('tab') === 'progresses' ? 'border-[#2459A6] text-[#2459A6]' : 'border-transparent text-[#536170] hover:text-[#18212B] hover:border-[#D8DEE6]' }}"
                 >

@@ -185,6 +185,10 @@
             </div>
         @endif
 
+    @elseif($activeTab === 'form')
+        <!-- TAB: INPUT PROGRESS (P01-T06: 1 Form Semua Activity) -->
+        <livewire:prototype.progress-form :projectId="request()->query('project_id')" />
+
     @elseif($activeTab === 'progresses')
         <!-- TAB: PROGRESS LIST -->
         <div class="bg-white rounded-lg border border-[#D8DEE6] overflow-hidden shadow-2xs">

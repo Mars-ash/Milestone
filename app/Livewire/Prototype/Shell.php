@@ -14,7 +14,7 @@ class Shell extends Component
     public function mount(?string $tab = null): void
     {
         $selectedTab = $tab ?? request()->query('tab');
-        if ($selectedTab && in_array($selectedTab, ['dashboard', 'projects', 'progresses', 'drafts', 'components'])) {
+        if ($selectedTab && in_array($selectedTab, ['dashboard', 'projects', 'progresses', 'drafts', 'components', 'form'])) {
             $this->activeTab = $selectedTab;
         } else {
             $this->activeTab = 'dashboard';
