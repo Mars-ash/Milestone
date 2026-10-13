@@ -273,47 +273,8 @@
         </div>
 
     @elseif($activeTab === 'drafts')
-        <!-- TAB: DRAFT -->
-        <div class="bg-white rounded-lg border border-[#D8DEE6] overflow-hidden shadow-2xs">
-            <div class="px-5 py-4 border-b border-[#D8DEE6]">
-                <h2 class="text-base font-bold text-[#18212B]">Draft Tersimpan</h2>
-                <p class="text-xs text-[#536170] mt-0.5">Isian kerja yang belum diterapkan ke data progress tersimpan. Tidak masuk hitungan Open/Closed (PRD D11).</p>
-            </div>
-
-            <div class="divide-y divide-[#D8DEE6]">
-                @forelse($drafts as $d)
-                    @php $proj = \App\Prototype\FakeStore::findProject($d['project_id']); @endphp
-                    <div class="p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:bg-[#F9FAFC] transition-colors">
-                        <div class="space-y-1">
-                            <div class="flex items-center gap-2">
-                                <span class="font-bold text-sm text-[#2459A6]">{{ $proj['jo_no'] ?? 'JO Belum Dipilih' }}</span>
-                                <x-ui.badge type="draft" :label="$d['type'] === 'new' ? 'Draft Baru' : 'Draft Perubahan'" />
-                                <x-ui.badge :type="$d['activity']" :label="$d['activity']" />
-                            </div>
-                            <div class="text-xs text-[#18212B]">
-                                {{ $proj['part_name'] ?? '-' }} ({{ $proj['part_no'] ?? '-' }})
-                            </div>
-                            <p class="text-xs text-[#536170] max-w-2xl">
-                                {{ Str::limit($d['notes'], 140) }}
-                            </p>
-                            <div class="text-[11px] text-[#8C9BAE]">
-                                Terakhir diperbarui: {{ $d['updated_at'] }}
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-2 shrink-0">
-                            <x-ui.button variant="secondary" size="sm">
-                                Lanjutkan Draft
-                            </x-ui.button>
-                        </div>
-                    </div>
-                @empty
-                    <x-ui.empty-state
-                        title="Tidak ada draft tersimpan"
-                        description="Semua isian kerja telah disimpan final atau belum ada draft baru yang dibuat."
-                    />
-                @endforelse
-            </div>
-        </div>
+        <!-- TAB: DRAFT (P01-T08: Manajemen Draft Mandiri) -->
+        <livewire:prototype.draft-list />
 
     @elseif($activeTab === 'components')
         <!-- TAB: PUSTAKA KOMPONEN UI -->

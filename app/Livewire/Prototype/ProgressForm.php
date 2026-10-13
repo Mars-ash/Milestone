@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Prototype;
 
+use App\Prototype\FakeDraftStore;
 use App\Prototype\FakeStore;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -48,6 +49,7 @@ class ProgressForm extends Component
     public ?string $draftUuid = null;
     public string $autosaveStatus = 'unsaved'; // unsaved, saving, saved, error
     public ?string $lastSavedTime = null;
+    public bool $simulateSaveError = false; // Mode simulasi kegagalan simpan untuk pengujian UI07 / AT37
 
     public ?string $successMessage = null;
 
@@ -206,12 +208,11 @@ class ProgressForm extends Component
     }
 
     /**
-     * Simpan sebagai draft (D11):
-     * Tidak mempengaruhi hitungan Open/Closed dan dapat dilanjutkan nanti.
+     * Dapatkan payload data form untuk penyimpanan draft.
      */
-    public function saveDraft(): void
+    public function getDraftPayload(): array
     {
-        $payload = [
+        return [
             'uuid' => $this->draftUuid,
             'type' => $this->progressId ? 'edit' : 'new',
             'progress_id' => $this->progressId,
@@ -235,12 +236,71 @@ class ProgressForm extends Component
             'feedbacks' => $this->feedbacks,
             'attachments' => $this->attachments,
         ];
+    }
 
-        $draft = FakeStore::saveDraft($payload);
+    /**
+     * Autosave reaktif saat ada perubahan properti (FR12, AT12, AT14).
+     * Tidak menyimpan bila form masih kosong sama sekali (dirty check AT14).
+     */
+    public function updated($property): void
+    {
+        if (in_array($property, ['activeSection', 'successMessage', 'autosaveStatus', 'simulateSaveError'], true)) {
+            return;
+        }
+
+        $payload = $this->getDraftPayload();
+
+        // Jangan buat draft bila form belum diisi perubahan apapun
+        if (FakeDraftStore::isEmptyDraft($payload)) {
+            $this->autosaveStatus = 'unsaved';
+            return;
+        }
+
+        $this->autosaveStatus = 'saving';
+
+        if ($this->simulateSaveError) {
+            $this->autosaveStatus = 'error';
+            return;
+        }
+
+        $draft = FakeDraftStore::save($payload);
+        $this->draftUuid = $draft['uuid'];
+        $this->autosaveStatus = 'saved';
+        $this->lastSavedTime = date('H:i');
+    }
+
+    /**
+     * Simpan sebagai draft secara eksplisit (D11).
+     * Tidak mempengaruhi hitungan Open/Closed dan dapat dilanjutkan nanti.
+     */
+    public function saveDraft(): void
+    {
+        $payload = $this->getDraftPayload();
+
+        if ($this->simulateSaveError) {
+            $this->autosaveStatus = 'error';
+            $this->addError('save', 'Simulasi kegagalan simpan draft. Silakan klik Coba Lagi.');
+            return;
+        }
+
+        $draft = FakeDraftStore::save($payload);
         $this->draftUuid = $draft['uuid'];
         $this->autosaveStatus = 'saved';
         $this->lastSavedTime = date('H:i');
         $this->successMessage = 'Draft berhasil disimpan (tidak mempengaruhi status Open/Closed).';
+    }
+
+    /**
+     * Buang draft yang sedang aktif (AT19).
+     */
+    public function discardCurrentDraft()
+    {
+        if ($this->draftUuid) {
+            FakeDraftStore::discard($this->draftUuid);
+            $this->draftUuid = null;
+        }
+
+        return redirect()->to('?tab=drafts');
     }
 
     public function cancel()

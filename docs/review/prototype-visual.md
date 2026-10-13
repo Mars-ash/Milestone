@@ -82,4 +82,23 @@ URL: `http://127.0.0.1:8000/prototype`
   - Lightbox Modal Open: `lightbox_open_1791877040391.png`
   - Form Loaded: `initial_form_loaded_1791876864025.png`
 
+---
+
+## 7. Evaluasi Autosave Draft dan Simpan Final (P01-T08)
+
+- **Pemisahan Draft dari Data Tersimpan (PRD D11, FR12, AT12, AT13):** Perubahan input form memicu autosave reaktif ke Draft tanpa mengubah data progress resmi tersimpan di dashboard dan tanpa mempengaruhi hitungan Open/Closed.
+- **Dirty Check & Form Baru Kosong (AT14):** Membuka form baru tanpa mengisi perubahan terbukti tidak membuat entri draft kosong yang mengotori daftar draft.
+- **Indikator Autosave & Retry (UI07, AT37):** Komponen `save-state.blade.php` menampilkan status visual real-time "Draft tersimpan [HH:mm]", "Menyimpan draft...", serta status "Gagal menyimpan draft" dengan tautan aksi Coba Lagi (Retry).
+- **Manajemen Daftar Draft (FR14, FR15, AT15, AT16, AT19):** Komponen `DraftList` menampilkan seluruh draft aktif (Draft Baru vs Draft Perubahan), tombol Lanjutkan Draft yang memuat ulang data ke form secara utuh, serta tombol Buang Draft dengan modal dialog konfirmasi yang aman.
+- **Simpan Final (FR13, AT17, AT18):** Eksekusi Simpan Progress menerapkan perubahan ke data operasional dan secara otomatis menghapus record draft terkait.
+- **Bukti Rekaman Sesi Browser:** `prototype_draft_test_1791877784002.webp`
+- **Screenshots:**
+  - Draft List Desktop: `draft_list_desktop_1791877875574.png`
+  - Form Draft Loaded: `form_with_draft_loaded_ok_1791878049637.png`
+  - Autosave Header Status: `form_autosave_indicator_1791878082210.png`
+  - Dashboard Keberlanjutan Data Lama: `dashboard_after_draft_1791878095265.png`
+  - Modal Konfirmasi Buang Draft: `draft_discard_modal_1791878191064.png`
+  - Draft List Mobile (390x844): `draft_list_mobile_390x844_1791878204540.png`
+
+
 
