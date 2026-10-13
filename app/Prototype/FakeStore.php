@@ -114,6 +114,120 @@ class FakeStore
         return null;
     }
 
+    /**
+     * Save (create or update) a project record.
+     * Enforces D01, FR01, AT01, AT02:
+     * - JO No must be unique (trimmed, case-insensitive)
+     * - Part No must be unique (trimmed, case-insensitive)
+     * - Part Name is required for new projects
+     * - Leading zeros preserved as string
+     *
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public static function saveProject(array $data): array
+    {
+        $joNo = trim($data['jo_no'] ?? '');
+        $partNo = trim($data['part_no'] ?? '');
+        $partName = trim($data['part_name'] ?? '');
+
+        $errors = [];
+
+        if ($joNo === '') {
+            $errors['jo_no'] = ['JO No wajib diisi.'];
+        }
+        if ($partNo === '') {
+            $errors['part_no'] = ['Part No wajib diisi.'];
+        }
+        if ($partName === '') {
+            $errors['part_name'] = ['Part Name wajib diisi.'];
+        }
+
+        $isNew = empty($data['id']);
+        $id = $isNew ? 'proj-' . Str::lower(Str::random(6)) : $data['id'];
+
+        $store = static::all();
+        $projects = $store['projects'] ?? [];
+
+        // Check uniqueness of JO No (AT01) and Part No (AT02)
+        foreach ($projects as $p) {
+            if ($p['id'] === $id) {
+                continue;
+            }
+
+            if ($joNo !== '' && strcasecmp(trim($p['jo_no']), $joNo) === 0) {
+                $errors['jo_no'] = ["JO No '{$joNo}' sudah digunakan pada project lain."];
+            }
+
+            if ($partNo !== '' && strcasecmp(trim($p['part_no']), $partNo) === 0) {
+                $errors['part_no'] = ["Part No '{$partNo}' sudah digunakan pada project lain."];
+            }
+        }
+
+        if (! empty($errors)) {
+            throw \Illuminate\Validation\ValidationException::withMessages($errors);
+        }
+
+        $existingIndex = null;
+        if (! $isNew) {
+            foreach ($projects as $idx => $p) {
+                if ($p['id'] === $id) {
+                    $existingIndex = $idx;
+                    break;
+                }
+            }
+        }
+
+        $existing = $existingIndex !== null ? $projects[$existingIndex] : [];
+
+        // Build normalized record according to Section 15 of PRD (23 active fields)
+        $record = [
+            'id' => $id,
+            'jo_no' => (string) $joNo,
+            'part_no' => (string) $partNo,
+            'part_name' => (string) $partName,
+            'customer' => $data['customer'] ?? $existing['customer'] ?? null,
+            'model' => $data['model'] ?? $existing['model'] ?? null,
+            'no_doc' => $data['no_doc'] ?? $existing['no_doc'] ?? null,
+            'date_receive' => $data['date_receive'] ?? $existing['date_receive'] ?? null,
+            'material' => $data['material'] ?? $existing['material'] ?? null,
+            'spec' => $data['spec'] ?? $existing['spec'] ?? null,
+            'material_thickness_raw' => $data['material_thickness_raw'] ?? $existing['material_thickness_raw'] ?? null,
+            'material_width_raw' => $data['material_width_raw'] ?? $existing['material_width_raw'] ?? null,
+            'process' => $data['process'] ?? $existing['process'] ?? null,
+            't0_target' => $data['t0_target'] ?? $existing['t0_target'] ?? $existing['t0_target_date'] ?? null,
+            't0_actual' => $data['t0_actual'] ?? $existing['t0_actual'] ?? $existing['t0_actual_date'] ?? null,
+            't0_target_date' => $data['t0_target'] ?? $existing['t0_target'] ?? $existing['t0_target_date'] ?? null,
+            't0_actual_date' => $data['t0_actual'] ?? $existing['t0_actual'] ?? $existing['t0_actual_date'] ?? null,
+            'plan_start' => $data['plan_start'] ?? $existing['plan_start'] ?? null,
+            'plan_finish' => $data['plan_finish'] ?? $existing['plan_finish'] ?? null,
+            'actual_start' => $data['actual_start'] ?? $existing['actual_start'] ?? null,
+            'actual_finish' => $data['actual_finish'] ?? $existing['actual_finish'] ?? null,
+            'event_1' => $data['event_1'] ?? $existing['event_1'] ?? $existing['event_1_date'] ?? null,
+            'event_2' => $data['event_2'] ?? $existing['event_2'] ?? $existing['event_2_date'] ?? null,
+            'event_3' => $data['event_3'] ?? $existing['event_3'] ?? $existing['event_3_date'] ?? null,
+            'event_1_date' => $data['event_1'] ?? $existing['event_1'] ?? $existing['event_1_date'] ?? null,
+            'event_2_date' => $data['event_2'] ?? $existing['event_2'] ?? $existing['event_2_date'] ?? null,
+            'event_3_date' => $data['event_3'] ?? $existing['event_3'] ?? $existing['event_3_date'] ?? null,
+            'dh' => $data['dh'] ?? $existing['dh'] ?? null,
+            'size' => $data['size'] ?? $existing['size'] ?? null,
+            'qty' => $data['qty'] ?? $existing['qty'] ?? null,
+            'remark' => $data['remark'] ?? $existing['remark'] ?? null,
+        ];
+
+        if ($existingIndex !== null) {
+            $projects[$existingIndex] = $record;
+        } else {
+            $projects[] = $record;
+        }
+
+        $store['projects'] = $projects;
+        static::saveStore($store);
+
+        return $record;
+    }
+
     /*
     |--------------------------------------------------------------------------
     | Progress Operations

@@ -73,66 +73,117 @@
         <livewire:prototype.dashboard />
 
     @elseif($activeTab === 'projects')
-        <!-- TAB: PROJECT MASTER -->
-        <div class="bg-white rounded-lg border border-[#D8DEE6] overflow-hidden shadow-2xs">
-            <div class="px-5 py-4 border-b border-[#D8DEE6] flex items-center justify-between">
-                <div>
-                    <h2 class="text-base font-bold text-[#18212B]">Daftar Project Master</h2>
-                    <p class="text-xs text-[#536170] mt-0.5">Satu JO No untuk satu Part No dan sebaliknya. Keduanya unik.</p>
+        <!-- TAB: PROJECT MASTER (P01-T05) -->
+        @if(request()->query('action') === 'new')
+            <!-- Mode Tambah Project Baru -->
+            <livewire:prototype.project-form />
+        @elseif(request()->query('edit'))
+            <!-- Mode Edit Project -->
+            <livewire:prototype.project-form :projectId="request()->query('edit')" />
+        @elseif(request()->query('detail'))
+            <!-- Mode Detail Project -->
+            <livewire:prototype.project-detail :projectId="request()->query('detail')" />
+        @else
+            <!-- Mode Daftar Project Master -->
+            <div class="bg-white rounded-lg border border-[#D8DEE6] overflow-hidden shadow-2xs">
+                <div class="px-5 py-4 border-b border-[#D8DEE6] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                        <h2 class="text-base font-bold text-[#18212B]">Daftar Project Master</h2>
+                        <p class="text-xs text-[#536170] mt-0.5">Satu JO No untuk satu Part No dan sebaliknya. Keduanya wajib unik (D01).</p>
+                    </div>
+                    <a
+                        href="?tab=projects&action=new"
+                        class="inline-flex items-center justify-center px-4 py-2 text-xs font-semibold rounded-md bg-[#2459A6] text-white hover:bg-[#1D4785] transition-colors shadow-2xs min-h-[44px] sm:min-h-0"
+                        data-testid="add-project-btn"
+                    >
+                        <svg class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Tambah Project
+                    </a>
+                </div>
+
+                <!-- Table Desktop (>= 768px) -->
+                <div class="hidden sm:block overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs sm:text-sm text-[#18212B]" data-testid="project-table">
+                        <thead class="bg-[#F5F6F8] border-b border-[#D8DEE6] text-xs font-semibold text-[#536170] uppercase">
+                            <tr>
+                                <th class="px-4 py-3 w-36">JO No</th>
+                                <th class="px-4 py-3 w-36">Part No</th>
+                                <th class="px-4 py-3">Part Name</th>
+                                <th class="px-4 py-3">Customer</th>
+                                <th class="px-4 py-3">Model</th>
+                                <th class="px-4 py-3 w-32">T0 Target / Act</th>
+                                <th class="px-4 py-3 w-36 text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-[#D8DEE6] bg-white">
+                            @foreach($projects as $p)
+                                <tr class="hover:bg-[#F9FAFC] transition-colors" data-testid="project-row" data-id="{{ $p['id'] }}">
+                                    <td class="px-4 py-3 font-bold text-[#2459A6] whitespace-nowrap">{{ $p['jo_no'] }}</td>
+                                    <td class="px-4 py-3 font-mono text-xs text-[#536170] whitespace-nowrap">{{ $p['part_no'] }}</td>
+                                    <td class="px-4 py-3 font-medium text-[#18212B]">{{ $p['part_name'] }}</td>
+                                    <td class="px-4 py-3 text-[#536170]">{{ $p['customer'] ?: '-' }}</td>
+                                    <td class="px-4 py-3 text-xs text-[#536170]">{{ $p['model'] ?: '-' }}</td>
+                                    <td class="px-4 py-3 text-xs whitespace-nowrap">
+                                        <div>Plan: {{ !empty($p['t0_target']) ? \Illuminate\Support\Carbon::parse($p['t0_target'])->format('d M Y') : (!empty($p['t0_target_date']) ? \Illuminate\Support\Carbon::parse($p['t0_target_date'])->format('d M Y') : '-') }}</div>
+                                        <div class="text-[#0E6B38]">Act: {{ !empty($p['t0_actual']) ? \Illuminate\Support\Carbon::parse($p['t0_actual'])->format('d M Y') : (!empty($p['t0_actual_date']) ? \Illuminate\Support\Carbon::parse($p['t0_actual_date'])->format('d M Y') : '-') }}</div>
+                                    </td>
+                                    <td class="px-4 py-3 text-center whitespace-nowrap">
+                                        <div class="inline-flex items-center gap-1.5">
+                                            <a
+                                                href="?tab=projects&detail={{ $p['id'] }}"
+                                                class="px-2.5 py-1 text-xs font-semibold rounded border border-[#D8DEE6] text-[#2459A6] hover:bg-[#F0F4FA]"
+                                            >
+                                                Detail
+                                            </a>
+                                            <a
+                                                href="?tab=projects&edit={{ $p['id'] }}"
+                                                class="px-2.5 py-1 text-xs font-semibold rounded border border-[#D8DEE6] text-[#536170] hover:bg-[#F5F6F8]"
+                                            >
+                                                Edit
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Mobile Card Summary (< 768px / 390px) -->
+                <div class="block sm:hidden divide-y divide-[#D8DEE6]">
+                    @foreach($projects as $p)
+                        <div class="p-4 bg-white space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="font-bold text-sm text-[#2459A6]">{{ $p['jo_no'] }}</span>
+                                <span class="text-xs font-mono text-[#536170]">{{ $p['part_no'] }}</span>
+                            </div>
+                            <div class="text-sm font-semibold text-[#18212B]">{{ $p['part_name'] }}</div>
+                            <div class="text-xs text-[#536170]">Customer: {{ $p['customer'] ?: '-' }} &bull; Model: {{ $p['model'] ?: '-' }}</div>
+                            <div class="text-xs text-[#536170] flex justify-between bg-[#F5F6F8] p-2 rounded">
+                                <span>T0 Plan: {{ $p['t0_target'] ?? $p['t0_target_date'] ?? '-' }}</span>
+                                <span class="text-[#0E6B38]">T0 Act: {{ $p['t0_actual'] ?? $p['t0_actual_date'] ?? '-' }}</span>
+                            </div>
+                            <div class="flex items-center justify-end gap-2 pt-1">
+                                <a
+                                    href="?tab=projects&detail={{ $p['id'] }}"
+                                    class="px-3 py-1.5 text-xs font-semibold rounded border border-[#D8DEE6] text-[#2459A6] bg-white min-h-[44px] flex items-center"
+                                >
+                                    Detail
+                                </a>
+                                <a
+                                    href="?tab=projects&edit={{ $p['id'] }}"
+                                    class="px-3 py-1.5 text-xs font-semibold rounded border border-[#D8DEE6] text-[#536170] bg-white min-h-[44px] flex items-center"
+                                >
+                                    Edit
+                                </a>
+                            </div>
+                        </div>
+                    @endforeach
                 </div>
             </div>
-
-            <!-- Table Desktop -->
-            <div class="hidden sm:block overflow-x-auto">
-                <table class="w-full text-left border-collapse text-sm text-[#18212B]">
-                    <thead class="bg-[#F5F6F8] border-b border-[#D8DEE6] text-xs font-semibold text-[#536170] uppercase">
-                        <tr>
-                            <th class="px-4 py-3">JO No</th>
-                            <th class="px-4 py-3">Part No</th>
-                            <th class="px-4 py-3">Part Name</th>
-                            <th class="px-4 py-3">Customer</th>
-                            <th class="px-4 py-3">Model</th>
-                            <th class="px-4 py-3">No Doc</th>
-                            <th class="px-4 py-3">T0 Target / Actual</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-[#D8DEE6]">
-                        @foreach($projects as $p)
-                            <tr class="hover:bg-[#F9FAFC] transition-colors">
-                                <td class="px-4 py-3 font-bold text-[#2459A6]">{{ $p['jo_no'] }}</td>
-                                <td class="px-4 py-3 font-mono text-xs">{{ $p['part_no'] }}</td>
-                                <td class="px-4 py-3 font-medium">{{ $p['part_name'] }}</td>
-                                <td class="px-4 py-3 text-[#536170]">{{ $p['customer'] }}</td>
-                                <td class="px-4 py-3 text-xs">{{ $p['model'] }}</td>
-                                <td class="px-4 py-3 text-xs font-mono">{{ $p['no_doc'] }}</td>
-                                <td class="px-4 py-3 text-xs whitespace-nowrap">
-                                    <div>Plan: {{ $p['t0_target_date'] ?? '-' }}</div>
-                                    <div class="text-[#0E6B38]">Act: {{ $p['t0_actual_date'] ?? '-' }}</div>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Mobile Card Summary (< 768px / 390px) -->
-            <div class="block sm:hidden divide-y divide-[#D8DEE6]">
-                @foreach($projects as $p)
-                    <div class="p-4 bg-white space-y-2">
-                        <div class="flex items-center justify-between">
-                            <span class="font-bold text-sm text-[#2459A6]">{{ $p['jo_no'] }}</span>
-                            <span class="text-xs font-mono text-[#536170]">{{ $p['part_no'] }}</span>
-                        </div>
-                        <div class="text-sm font-semibold text-[#18212B]">{{ $p['part_name'] }}</div>
-                        <div class="text-xs text-[#536170]">Customer: {{ $p['customer'] }} &bull; Model: {{ $p['model'] }}</div>
-                        <div class="text-xs text-[#536170] flex justify-between bg-[#F5F6F8] p-2 rounded">
-                            <span>T0 Plan: {{ $p['t0_target_date'] ?? '-' }}</span>
-                            <span class="text-[#0E6B38]">T0 Act: {{ $p['t0_actual_date'] ?? '-' }}</span>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-        </div>
+        @endif
 
     @elseif($activeTab === 'progresses')
         <!-- TAB: PROGRESS LIST -->

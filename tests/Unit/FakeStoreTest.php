@@ -271,4 +271,68 @@ class FakeStoreTest extends TestCase
         $this->assertContains('prog-005', $allIds);
         $this->assertSame(2, count(array_unique($allIds)), 'Even with multiple roles in prog-005, prog-005 must appear exactly once');
     }
+
+    public function test_save_project_creates_valid_project_preserving_leading_zeros(): void
+    {
+        $newProject = FakeStore::saveProject([
+            'jo_no' => '0099/NM/2026',
+            'part_no' => '00888-A999',
+            'part_name' => 'BRACKET TEST LEADING ZERO',
+            'customer' => 'PT UJI PRESISI',
+            'dh' => '115,5 mm',
+            'qty' => '500 pcs',
+        ]);
+
+        $this->assertNotEmpty($newProject['id']);
+        $this->assertSame('0099/NM/2026', $newProject['jo_no']);
+        $this->assertSame('00888-A999', $newProject['part_no']);
+        $this->assertSame('115,5 mm', $newProject['dh']);
+        $this->assertCount(4, FakeStore::getProjects());
+    }
+
+    public function test_at01_duplicate_jo_is_rejected(): void
+    {
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
+
+        // Try to save a new project with existing JO No (0012/NM/2026)
+        FakeStore::saveProject([
+            'jo_no' => '0012/NM/2026',
+            'part_no' => '99999-NEW-PART',
+            'part_name' => 'DUPLICATE JO TEST',
+        ]);
+    }
+
+    public function test_at02_duplicate_part_no_is_rejected(): void
+    {
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
+
+        // Try to save a new project with existing Part No (0091-XYZ-01)
+        FakeStore::saveProject([
+            'jo_no' => '9999/NM/2026',
+            'part_no' => '0091-XYZ-01',
+            'part_name' => 'DUPLICATE PART NO TEST',
+        ]);
+    }
+
+    public function test_at03_updating_master_project_reflects_in_old_progresses(): void
+    {
+        // prog-001 belongs to proj-001
+        $progBefore = FakeStore::findProgress('prog-001');
+        $this->assertSame('BRACKET FRONT LH (FIKTIF)', $progBefore['project']['part_name']);
+
+        // Update Part Name and Customer on proj-001
+        FakeStore::saveProject([
+            'id' => 'proj-001',
+            'jo_no' => '0012/NM/2026',
+            'part_no' => '0091-XYZ-01',
+            'part_name' => 'BRACKET FRONT LH UPDATED REV 2',
+            'customer' => 'PT ASTRA REVISI MOTOR',
+        ]);
+
+        // Re-fetch progress: must dynamically reflect updated master identity without modifying progress notes
+        $progAfter = FakeStore::findProgress('prog-001');
+        $this->assertSame('BRACKET FRONT LH UPDATED REV 2', $progAfter['project']['part_name']);
+        $this->assertSame('PT ASTRA REVISI MOTOR', $progAfter['project']['customer']);
+        $this->assertSame($progBefore['notes'], $progAfter['notes'], 'Progress notes must remain unchanged');
+    }
 }
