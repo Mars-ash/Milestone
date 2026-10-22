@@ -1,522 +1,685 @@
-<div class="bg-white rounded-lg border border-[#D8DEE6] shadow-2xs overflow-hidden">
-    <!-- Header Form -->
-    <div class="px-5 py-4 border-b border-[#D8DEE6] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white">
-        <div>
-            <div class="flex items-center gap-2">
-                <span class="text-xs font-bold uppercase tracking-wider text-[#2459A6]">
-                    Form Progress Kegiatan (FR04: Satu Bentuk untuk Semua Activity)
-                </span>
-                <span class="text-xs text-[#536170]">
-                    {{ $progressId ? "Edit {$progressId}" : 'Entri Baru' }}
-                </span>
-            </div>
-            <h1 class="text-lg sm:text-xl font-bold text-[#18212B] mt-0.5">
-                {{ $progressId ? 'Edit Catatan Kegiatan' : 'Catat Kegiatan Progress Baru' }}
-            </h1>
+<div
+    x-data="{
+    observer: null, linkHandler: null, stopLeaveInterceptor: null, pending: Promise.resolve(), busy: 0, leaving: false,
+    requestFailed: false, requestErrorMessage: '', stopRequestInterceptor: null,
+    beforeUnloadHandler: null, changeSeq: 0, unconfirmedInput: false,
+    init() {
+        this.$nextTick(() => this.growAll());
+        this.observer = new MutationObserver(() => this.growAll());
+        this.observer.observe(this.$el, { childList: true, subtree: true, characterData: true });
+        this.stopRequestInterceptor = this.$wire.$interceptMessage(({ onFailure, onError, onSuccess }) => {
+            const submittedSeq = this.changeSeq;
+            onFailure(() => {
+                this.requestFailed = true;
+                this.requestErrorMessage = 'Koneksi terputus. Perubahan belum terkonfirmasi.';
+            });
+            onError(({ response }) => {
+                this.requestFailed = true;
+                this.requestErrorMessage = response?.status === 419
+                    ? 'Sesi berakhir. Pertahankan isian sebelum memuat ulang.'
+                    : 'Permintaan gagal. Isian masih ada di form.';
+            });
+            onSuccess(({ onSync }) => onSync(() => {
+                this.requestFailed = false;
+                this.requestErrorMessage = '';
+                if (submittedSeq === this.changeSeq && this.$wire.autosaveStatus !== 'error') {
+                    this.unconfirmedInput = false;
+                }
+            }));
+        });
+        this.beforeUnloadHandler = event => {
+            if (this.unconfirmedInput || this.requestFailed || this.busy > 0 || this.$wire.autosaveStatus === 'error') {
+                event.preventDefault();
+                event.returnValue = '';
+            }
+        };
+        window.addEventListener('beforeunload', this.beforeUnloadHandler);
+        this.stopLeaveInterceptor = this.$wire.$intercept('leaveEditor', ({ onFinish }) => {
+            onFinish(() => { this.leaving = false; });
+        });
+        this.linkHandler = async event => {
+            const link = event.target.closest('a[href]');
+            if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || link.hasAttribute('download') || (link.target && link.target !== '_self')) return;
+            const target = new URL(link.href, location.href);
+            if (target.origin !== location.origin || target.pathname.replace(/\/$/, '') !== location.pathname.replace(/\/$/, '') || link.getAttribute('href').startsWith('#')) return;
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            if (this.leaving) return;
+            this.leaving = true;
+            try {
+                await this.pending;
+                await this.$wire.$set('pendingUrl', target.href, false);
+                this.$refs.leave.click();
+            } catch (_) {
+                this.leaving = false;
+                this.$dispatch('ui-toast', { message: 'Isian belum tersimpan. Coba lagi sebelum berpindah halaman.' });
+            }
+        };
+        document.addEventListener('click', this.linkHandler, true);
+    },
+    destroy() {
+        this.observer?.disconnect();
+        document.removeEventListener('click', this.linkHandler, true);
+        this.stopLeaveInterceptor?.();
+        this.stopRequestInterceptor?.();
+        window.removeEventListener('beforeunload', this.beforeUnloadHandler);
+    },
+    markInput(el) {
+        this.changeSeq++;
+        this.unconfirmedInput = true;
+        this.grow(el);
+    },
+    grow(el) {
+        if (!el?.matches('.entry-sheet textarea')) return;
+        el.style.height = 'auto';
+        el.style.height = Math.min(320, Math.max(56, el.scrollHeight + 2)) + 'px';
+    },
+    growAll() { this.$el.querySelectorAll('.entry-sheet textarea').forEach(el => this.grow(el)); },
+    focus(selector) {
+        this.$nextTick(() => requestAnimationFrame(() => this.$el.querySelector(selector)?.focus()));
+    },
+    enqueue(job) {
+        this.busy++;
+        const task = this.pending.catch(() => {}).then(job);
+        this.pending = task
+            .catch(() => this.$dispatch('ui-toast', {
+                message: 'Lampiran belum tersimpan. Coba pilih file kembali.'
+            }))
+            .finally(() => { this.busy--; });
+        return this.pending;
+    },
+    pickPhotos(event, problemId) {
+        const files = Array.from(event.target.files || []);
+        event.target.value = '';
+        this.enqueue(async () => {
+            for (const file of files) {
+                if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+                    this.$dispatch('ui-toast', { message: 'Gunakan foto JPG, PNG, atau WebP.' }); continue;
+                }
+                if (file.size > 2 * 1024 * 1024) {
+                    this.$dispatch('ui-toast', { message: 'Gunakan foto di bawah 2 MB.' }); continue;
+                }
+                const src = await new Promise((resolve, reject) => {
+                    const reader = new FileReader(); reader.onload = () => resolve(reader.result);
+                    reader.onerror = reject; reader.readAsDataURL(file);
+                });
+                await this.$wire.$call('attachProblemPhoto', problemId, { name: file.name, src });
+            }
+        });
+    },
+    pickFiles(event, owner) {
+        const files = Array.from(event.target.files || [], f => ({ name: f.name, size: f.size }));
+        event.target.value = '';
+        if (files.length) this.enqueue(() => this.$wire.$call('attachFiles', owner, files));
+    }
+}"
+    x-on:input.capture="markInput($event.target)"
+    x-on:editor-focus.window="focus($event.detail.selector)"
+    x-on:focus-first-error.window="focus('.input-error, [aria-invalid=true]')"
+    x-on:keydown.window="if (($event.ctrlKey || $event.metaKey) && $event.key === 'Enter' && !document.querySelector('dialog[open]')) { $event.preventDefault(); if (!busy && !$wire.isClosed) $refs.save.click(); }"
+>
+    <!-- Tombol kembali -->
+    <button type="button" class="back" wire:click="cancel" x-bind:disabled="busy > 0 || leaving">
+        <x-ui.icon name="left" />Kembali ke daftar
+    </button>
+
+    <!-- Header Form Editor -->
+    <div class="page-head editor-head">
+        <div class="heading-inline">
+            <h1>{{ $progressId ? 'Edit progress' : 'Tambah progress' }}</h1>
+            <span class="status {{ $isClosed ? 'closed' : ($progressId ? '' : 'draft') }}">{{ $isClosed ? 'Closed' : ($progressId ? 'Open' : 'Draft') }}</span>
         </div>
-
-        <div class="flex flex-wrap items-center gap-2">
-            <div class="hidden sm:block mr-2">
-                <x-progress.save-state :status="$autosaveStatus" :time="$lastSavedTime" />
-            </div>
-
-            @if($draftUuid)
-                <button
-                    wire:click="discardCurrentDraft"
-                    wire:confirm="Apakah Anda yakin ingin membuang draft ini? Seluruh perubahan draft yang belum tersimpan akan dibatalkan."
-                    type="button"
-                    class="px-3 py-2 text-xs font-semibold rounded-md border border-[#F8D0CD] text-[#C5221F] bg-[#FCE8E6] hover:bg-[#F8D0CD] transition-colors min-h-[44px] flex items-center gap-1"
-                    data-testid="discard-active-draft-btn"
-                >
-                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                    </svg>
-                    Buang Draft
-                </button>
+        <div class="actions">
+            @if($progressId)
+                <a class="btn ghost sm" href="?tab=progresses&id={{ $progressId }}">
+                    Lihat ringkasan <x-ui.icon name="right" />
+                </a>
             @endif
-
-            <button
-                wire:click="saveDraft"
-                type="button"
-                class="px-3.5 py-2 text-xs font-semibold rounded-md border border-[#D8DEE6] bg-white text-[#536170] hover:bg-[#F5F6F8] transition-colors min-h-[44px] flex items-center gap-1.5"
-                data-testid="save-draft-btn"
-            >
-                <svg class="w-4 h-4 text-[#8A5B00]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/>
-                </svg>
-                Simpan Draft
-            </button>
-            <button
-                wire:click="cancel"
-                type="button"
-                class="px-3.5 py-2 text-xs font-semibold rounded-md border border-[#D8DEE6] bg-white text-[#536170] hover:bg-[#F5F6F8] transition-colors min-h-[44px]"
-            >
-                Batal
-            </button>
-            @if($isClosed)
-                <button
-                    wire:click="reopenAndEnableEdit"
-                    type="button"
-                    class="px-4 py-2 text-xs font-semibold rounded-md bg-[#0E6B38] text-white hover:bg-[#0A532B] transition-colors shadow-2xs min-h-[44px] flex items-center gap-1.5"
-                    data-testid="reopen-form-btn"
-                >
-                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                    </svg>
-                    Buka Kembali (Reopen)
-                </button>
-            @endif
-
-            <button
-                wire:click="save"
-                type="button"
-                @if($isClosed) disabled @endif
-                class="px-5 py-2 text-xs font-semibold rounded-md {{ $isClosed ? 'bg-[#D8DEE6] text-[#8C9BAE] cursor-not-allowed' : 'bg-[#2459A6] text-white hover:bg-[#1D4785]' }} transition-colors shadow-2xs min-h-[44px] flex items-center gap-1.5"
-                data-testid="save-progress-btn"
-            >
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                </svg>
-                Simpan Progress
-            </button>
+            <span class="required-note">* Wajib diisi</span>
         </div>
     </div>
 
-    <!-- Banner Peringatan Closed Form (AT21) -->
-    @if($isClosed)
-        <div class="m-5 p-3.5 rounded-md bg-[#F5F6F8] border border-[#D8DEE6] text-[#536170] text-xs font-medium flex items-center justify-between" data-testid="form-closed-banner">
-            <div class="flex items-center gap-2">
-                <svg class="w-4 h-4 text-[#8C9BAE] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-                </svg>
-                <span>Catatan progress ini berstatus <strong>Closed (Read-Only)</strong>. Klik tombol <strong>"Buka Kembali (Reopen)"</strong> di atas untuk mengaktifkan mode edit.</span>
-            </div>
-            <button wire:click="reopenAndEnableEdit" class="text-[#0E6B38] font-bold text-xs underline hover:no-underline shrink-0">
-                Reopen Sekarang
-            </button>
-        </div>
-    @endif
 
-    <!-- Error Simpan / Closed Error -->
-    @error('save')
-        <div class="m-5 p-3 rounded-md bg-[#FCE8E6] border border-[#F8D0CD] text-[#C5221F] text-xs font-medium">
-            {{ $message }}
-        </div>
-    @enderror
 
-    <!-- Notifikasi Sukses -->
-    @if($successMessage)
-        <div class="m-5 p-3 rounded-md bg-[#EAF7EE] border border-[#B6E6C3] text-[#0E6B38] text-xs font-medium flex items-center gap-2">
-            <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-            </svg>
-            <span>{{ $successMessage }}</span>
-        </div>
-    @endif
-
-    <form wire:submit.prevent="save" class="p-5 sm:p-6 space-y-6">
-        <!-- 1. IDENTITAS PROJECT & AUTOFILL (FR02, AT03) -->
-        <div class="space-y-3">
-            <h2 class="text-xs font-bold uppercase tracking-wider text-[#2459A6] pb-1 border-b border-[#E8ECF0]">
-                1. Pemilihan Project & Identitas Terkini
-            </h2>
-
-            <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
-                <!-- Dropdown JO No Searchable -->
-                <div class="md:col-span-5">
-                    <label class="block text-xs font-semibold text-[#18212B] mb-1">
-                        Pilih JO No <span class="text-[#C5221F]">*</span>
-                    </label>
-                    <select
-                        wire:model.live="projectId"
-                        class="w-full px-3 py-2 text-xs sm:text-sm bg-white border @error('projectId') border-[#C5221F] @else border-[#D8DEE6] @enderror rounded-md text-[#18212B] focus:outline-none focus:ring-1 focus:ring-[#2459A6] focus:border-[#2459A6] min-h-[42px]"
-                        data-testid="select-jo-no"
-                    >
-                        <option value="">-- Pilih Nomor JO --</option>
-                        @foreach($projects as $p)
-                            <option value="{{ $p['id'] }}">
-                                {{ $p['jo_no'] }} — {{ $p['part_name'] }} ({{ $p['part_no'] }})
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('projectId')
-                        <p class="text-[11px] text-[#C5221F] mt-1" data-testid="error-project-id">{{ $message }}</p>
-                    @enderror
-                    <p class="text-[11px] text-[#536170] mt-0.5">
-                        Memilih JO akan otomatis mengisi identitas terkini di samping secara hanya-baca.
-                    </p>
-                </div>
-
-                <!-- 5 Field Identitas Hanya-Baca Autofill (Component Reusable) -->
-                <div class="md:col-span-7">
-                    <x-progress.identity :project="$selectedProject" />
-                </div>
-            </div>
-        </div>
-
-        <!-- 2. PILIHAN 5 ACTIVITY (FR04, AT05) -->
-        <div class="space-y-3 pt-2">
-            <div class="flex items-center justify-between pb-1 border-b border-[#E8ECF0]">
-                <h2 class="text-xs font-bold uppercase tracking-wider text-[#2459A6]">
-                    2. Jenis Activity (5 Pilihan Tetap Sesuai D03)
-                </h2>
-                <span class="text-[11px] text-[#536170]">
-                    *Pergantian Activity tidak akan menghapus data rincian atau field lainnya.
-                </span>
-            </div>
-
-            <div class="flex flex-wrap gap-2" data-testid="activity-selector">
-                @foreach(['Trial', 'Sent Sample', 'Send Document', 'Audit', 'Others'] as $actOption)
-                    <button
-                        type="button"
-                        wire:click="setActivity('{{ $actOption }}')"
-                        class="px-4 py-2 text-xs font-semibold rounded-md border transition-colors flex items-center gap-1.5 min-h-[42px] {{ $activity === $actOption ? 'bg-[#2459A6] text-white border-[#2459A6] shadow-2xs' : 'bg-white text-[#536170] border-[#D8DEE6] hover:bg-[#F5F6F8]' }}"
-                        data-testid="activity-pill-{{ Str::slug($actOption) }}"
-                    >
-                        @if($activity === $actOption)
-                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
-                            </svg>
-                        @endif
-                        {{ $actOption }}
-                    </button>
+    <!-- Panel JO No & Autofill Identitas Project Master -->
+    <section class="context" aria-label="Identitas project">
+        <div class="jo-selector">
+            <label class="field-label" for="jo-selector">JO No<span class="required">*</span></label>
+            <select
+                id="jo-selector"
+                wire:model.live="projectId"
+                aria-required="true"
+                @if($errors->has('projectId')) aria-invalid="true" aria-describedby="error-project" class="input-error" @endif
+            >
+                <option value="">Pilih JO No</option>
+                @foreach($projects as $x)
+                    <option value="{{ $x['id'] }}">{{ $x['jo_no'] ?? $x['jo'] }}</option>
                 @endforeach
-            </div>
-            @error('activity')
-                <p class="text-[11px] text-[#C5221F] mt-1">{{ $message }}</p>
+            </select>
+            @error('projectId')
+                <div class="field-error" id="error-project">{{ $message }}</div>
             @enderror
         </div>
 
-        <!-- 3. DATA UTAMA AKTIVITAS & PIC (FR05, AT06) -->
-        <div class="space-y-3 pt-2">
-            <h2 class="text-xs font-bold uppercase tracking-wider text-[#2459A6] pb-1 border-b border-[#E8ECF0]">
-                3. Data Pelaksanaan & Catatan Kegiatan
-            </h2>
+        <div>
+            <div class="auto-label">
+                <x-ui.icon name="lock" />Identitas Project Master
+            </div>
+            @php
+                $pName = $selectedProject['part_name'] ?? $selectedProject['name'] ?? null;
+                $pPart = $selectedProject['part_no'] ?? $selectedProject['part'] ?? null;
+                $pCust = $selectedProject['customer'] ?? null;
+                $pModel = $selectedProject['model'] ?? null;
+                $pDoc = $selectedProject['no_doc'] ?? $selectedProject['doc'] ?? null;
+            @endphp
+            <div class="identity">
+                <div class="identity-item">
+                    <label>Part</label>
+                    <strong>{{ $pName ?: '—' }}</strong>
+                    @if($pPart)
+                        <small>{{ $pPart }}</small>
+                    @endif
+                </div>
+                <div class="identity-item">
+                    <label>Customer</label>
+                    <strong>{{ $pCust ?: '—' }}</strong>
+                </div>
+                <div class="identity-item">
+                    <label>Model</label>
+                    <strong>{{ $pModel ?: '—' }}</strong>
+                </div>
+                <div class="identity-item">
+                    <label>No Doc</label>
+                    <strong>{{ $pDoc ?: '—' }}</strong>
+                </div>
+            </div>
+        </div>
+    </section>
 
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <!-- Tanggal Aktivitas -->
-                <div>
-                    <label class="block text-xs font-semibold text-[#18212B] mb-1">
-                        Tanggal Aktivitas <span class="text-[#C5221F]">*</span>
-                    </label>
+    <!-- Error Summary Alert -->
+    @if($errors->any())
+        <div class="error-summary" role="alert">
+            <p>
+    {{ implode(' ', $errors->all()) }}
+    @if($autosaveStatus === 'saved')
+        Isian lainnya tetap tersimpan sebagai draft.
+    @else
+        Isian masih ada di form. Penyimpanan draft belum terkonfirmasi.
+    @endif
+</p>
+        </div>
+    @endif
+
+    <!-- Single Work Sheet Panel (5 Section Tanpa Tab) -->
+    <div class="panel entry-sheet">
+        <!-- SECTION 01: Aktivitas -->
+        <section class="entry-section" id="entry-activity" aria-labelledby="heading-activity">
+            <div class="entry-section-head">
+                <span class="section-index" aria-hidden="true">01</span>
+                <h2 id="heading-activity" tabindex="-1">Aktivitas</h2>
+            </div>
+            <div class="form-grid activity-fields">
+                <div class="field">
+                    <label class="field-label" for="f-date">Tanggal aktivitas<span class="required">*</span></label>
                     <input
-                        wire:model="activityDate"
+                        id="f-date"
                         type="date"
-                        class="w-full px-3 py-2 text-xs sm:text-sm bg-white border @error('activityDate') border-[#C5221F] @else border-[#D8DEE6] @enderror rounded-md text-[#18212B] focus:outline-none focus:ring-1 focus:ring-[#2459A6] focus:border-[#2459A6] min-h-[42px]"
-                        data-testid="input-activity-date"
+                        wire:model.live.debounce.300ms="activityDate"
+                        class="input @error('activityDate') input-error @enderror"
+                        aria-required="true"
+                        @if($errors->has('activityDate')) aria-invalid="true" aria-describedby="error-activityDate" @endif
                     />
                     @error('activityDate')
-                        <p class="text-[11px] text-[#C5221F] mt-1" data-testid="error-activity-date">{{ $message }}</p>
+                        <div class="field-error" id="error-activityDate">{{ $message }}</div>
                     @enderror
-                    <p class="text-[11px] text-[#536170] mt-0.5">Tanggal kegiatan dilaksanakan.</p>
                 </div>
 
-                <!-- PIC Progress (Teks Bebas) -->
-                <div>
-                    <label class="block text-xs font-semibold text-[#18212B] mb-1">
-                        PIC Progress (Teks Bebas)
-                    </label>
-                    <input
-                        wire:model="picProgress"
-                        type="text"
-                        placeholder="Contoh: Ahmad Fauzi"
-                        class="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-[#D8DEE6] rounded-md text-[#18212B] placeholder-[#8C9BAE] focus:outline-none focus:ring-1 focus:ring-[#2459A6] min-h-[42px]"
-                        data-testid="input-pic-progress"
-                    />
-                    <p class="text-[11px] text-[#536170] mt-0.5">Nama bebas tanpa relasi akun (FR05).</p>
+                <div class="field">
+                    <label class="field-label" for="f-activity">Activity<span class="required">*</span></label>
+                    <select
+                        id="f-activity"
+                        wire:model.live="activity"
+                        class="@error('activity') input-error @enderror"
+                        aria-required="true"
+                        @if($errors->has('activity')) aria-invalid="true" aria-describedby="error-activity" @endif
+                    >
+                        <option value="">Pilih Activity</option>
+                        @foreach(['Trial', 'Sent Sample', 'Send Document', 'Audit', 'Others'] as $act)
+                            <option value="{{ $act }}">{{ $act }}</option>
+                        @endforeach
+                    </select>
+                    @error('activity')
+                        <div class="field-error" id="error-activity">{{ $message }}</div>
+                    @enderror
                 </div>
 
-                <!-- PIC Customer (Teks Bebas) -->
-                <div>
-                    <label class="block text-xs font-semibold text-[#18212B] mb-1">
-                        PIC Customer (Teks Bebas)
-                    </label>
+                <div class="field">
+                    <label class="field-label" for="f-customerPic">PIC Customer</label>
                     <input
-                        wire:model="picCustomer"
+                        id="f-customerPic"
                         type="text"
-                        placeholder="Contoh: Irwan Customer"
-                        class="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-[#D8DEE6] rounded-md text-[#18212B] placeholder-[#8C9BAE] focus:outline-none focus:ring-1 focus:ring-[#2459A6] min-h-[42px]"
-                        data-testid="input-pic-customer"
+                        wire:model.live.debounce.300ms="picCustomer"
+                        class="input"
                     />
+                </div>
+
+                <div class="field full">
+                    <label class="field-label" for="f-eventNote">Event</label>
+                    <input id="f-eventNote" type="text" class="input" wire:model.live.debounce.300ms="eventNote" />
+                </div>
+
+                <div class="field full">
+                    <label class="field-label" for="f-description">Activity Desc</label>
+                    <textarea
+                        id="f-description"
+                        rows="2"
+                        wire:model.live.debounce.300ms="notes"
+                    ></textarea>
                 </div>
             </div>
 
-            <!-- Uraian Catatan Kegiatan (Textarea Luas) -->
-            <div class="mt-3">
-                <label class="block text-xs font-semibold text-[#18212B] mb-1">
-                    Uraian Catatan Kegiatan
-                </label>
-                <textarea
-                    wire:model="notes"
-                    rows="4"
-                    placeholder="Tuliskan uraian hasil kegiatan, observasi pelaksanaan, atau temuan umum..."
-                    class="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-[#D8DEE6] rounded-md text-[#18212B] placeholder-[#8C9BAE] focus:outline-none focus:ring-1 focus:ring-[#2459A6]"
-                    data-testid="textarea-notes"
-                ></textarea>
-                <p class="text-[11px] text-[#536170] mt-0.5">Nyaman untuk uraian teks panjang.</p>
-            </div>
-        </div>
-
-        <!-- 4. RINCIAN TRIAL & LAPANGAN (D15 RAW TEXT - TERSEDIA UNTUK SEMUA ACTIVITY) -->
-        <div class="space-y-3 pt-2">
-            <div class="flex items-center justify-between pb-1 border-b border-[#E8ECF0]">
-                <h2 class="text-xs font-bold uppercase tracking-wider text-[#2459A6]">
-                    4. Rincian Parameter Lapangan & Trial (Tersedia untuk Semua Activity)
-                </h2>
-                <span class="text-[11px] text-[#536170]">
-                    *D15: Raw text mempertahankan koma dan titik (contoh 1,5 dan 1.5).
-                </span>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                <!-- Process Trial -->
-                <div>
-                    <label class="block text-xs font-semibold text-[#18212B] mb-1">Process Trial</label>
-                    <input
-                        wire:model="processTrial"
-                        type="text"
-                        placeholder="Contoh: Bending 2"
-                        class="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-[#D8DEE6] rounded-md text-[#18212B] focus:outline-none focus:ring-1 focus:ring-[#2459A6] min-h-[40px]"
-                        data-testid="input-process-trial"
-                    />
-                </div>
-
-                <!-- Mesin -->
-                <div>
-                    <label class="block text-xs font-semibold text-[#18212B] mb-1">Mesin</label>
-                    <input
-                        wire:model="machine"
-                        type="text"
-                        placeholder="Contoh: Press 200T"
-                        class="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-[#D8DEE6] rounded-md text-[#18212B] focus:outline-none focus:ring-1 focus:ring-[#2459A6] min-h-[40px]"
-                        data-testid="input-machine"
-                    />
-                </div>
-
-                <!-- DH (Die High) -->
-                <div>
-                    <label class="block text-xs font-semibold text-[#18212B] mb-1">
-                        DH (Die High)
-                    </label>
-                    <input
-                        wire:model="dieHighRaw"
-                        type="text"
-                        placeholder="Contoh: 120,5 mm"
-                        class="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-[#D8DEE6] rounded-md text-[#18212B] focus:outline-none focus:ring-1 focus:ring-[#2459A6] min-h-[40px]"
-                        data-testid="input-dh"
-                    />
-                    <p class="text-[11px] text-[#536170] mt-0.5">Input raw teks bebas.</p>
-                </div>
-
-                <!-- Material Actual Trial -->
-                <div>
-                    <label class="block text-xs font-semibold text-[#18212B] mb-1">Material Actual Trial</label>
-                    <input
-                        wire:model="materialActualTrial"
-                        type="text"
-                        placeholder="Contoh: SPCC t=1.5 mm"
-                        class="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-[#D8DEE6] rounded-md text-[#18212B] focus:outline-none focus:ring-1 focus:ring-[#2459A6] min-h-[40px]"
-                        data-testid="input-material-actual"
-                    />
-                </div>
-
-                <!-- Qty Material Raw -->
-                <div>
-                    <label class="block text-xs font-semibold text-[#18212B] mb-1">Qty Material</label>
-                    <input
-                        wire:model="qtyMaterialRaw"
-                        type="text"
-                        placeholder="Contoh: 25 lembar"
-                        class="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-[#D8DEE6] rounded-md text-[#18212B] focus:outline-none focus:ring-1 focus:ring-[#2459A6] min-h-[40px]"
-                        data-testid="input-qty-material"
-                    />
-                </div>
-
-                <!-- Qty Process Raw -->
-                <div>
-                    <label class="block text-xs font-semibold text-[#18212B] mb-1">Qty Process</label>
-                    <input
-                        wire:model="qtyProcessRaw"
-                        type="text"
-                        placeholder="Contoh: 20 pcs"
-                        class="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-[#D8DEE6] rounded-md text-[#18212B] focus:outline-none focus:ring-1 focus:ring-[#2459A6] min-h-[40px]"
-                        data-testid="input-qty-process"
-                    />
-                </div>
-
-                <!-- Qty Sample Raw -->
-                <div>
-                    <label class="block text-xs font-semibold text-[#18212B] mb-1">Qty Sample</label>
-                    <input
-                        wire:model="qtySampleRaw"
-                        type="text"
-                        placeholder="Contoh: 5 pcs"
-                        class="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-[#D8DEE6] rounded-md text-[#18212B] focus:outline-none focus:ring-1 focus:ring-[#2459A6] min-h-[40px]"
-                        data-testid="input-qty-sample"
-                    />
-                </div>
-
-                <!-- Ket Event -->
-                <div>
-                    <label class="block text-xs font-semibold text-[#18212B] mb-1">Ket Event</label>
-                    <input
-                        wire:model="eventNote"
-                        type="text"
-                        placeholder="Catatan event (terpisah)"
-                        class="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-[#D8DEE6] rounded-md text-[#18212B] focus:outline-none focus:ring-1 focus:ring-[#2459A6] min-h-[40px]"
-                        data-testid="input-event-note"
-                    />
-                </div>
-            </div>
-
-            <!-- Remark Progress -->
-            <div class="mt-3">
-                <label class="block text-xs font-semibold text-[#18212B] mb-1">Remark Progress</label>
-                <input
-                    wire:model="remark"
-                    type="text"
-                    placeholder="Catatan remark progress..."
-                    class="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-[#D8DEE6] rounded-md text-[#18212B] focus:outline-none focus:ring-1 focus:ring-[#2459A6] min-h-[40px]"
-                    data-testid="input-remark"
-                />
-            </div>
-        </div>
-
-        <!-- 5. NAVIGASI BAGIAN LANJUTAN (Problem, Next Action, Feedback, Lampiran) -->
-        <div class="pt-2 space-y-3">
-            <div class="flex items-center justify-between pb-1 border-b border-[#E8ECF0]">
-                <h2 class="text-xs font-bold uppercase tracking-wider text-[#2459A6]">
-                    5. Tindak Lanjut & Lampiran (FR04, UI05)
-                </h2>
-                <span class="text-[11px] text-[#536170]">
-                    *Dapat diisi saat ini atau dilengkapi kemudian.
-                </span>
-            </div>
-
-            <!-- Navigasi Sub-Tab Bagian (UI05) -->
-            <div class="flex border-b border-[#D8DEE6] gap-2 overflow-x-auto text-xs">
-                <button
-                    type="button"
-                    wire:click="setSection('problems')"
-                    class="px-3.5 py-2 font-medium border-b-2 transition-colors flex items-center gap-1.5 whitespace-nowrap {{ $activeSection === 'problems' ? 'border-[#2459A6] text-[#2459A6] font-bold' : 'border-transparent text-[#536170] hover:text-[#18212B]' }}"
-                >
-                    Problem & Corrective Action
-                    <span class="text-[10px] bg-[#F0F2F5] px-1.5 py-0.5 rounded text-[#536170]">
-                        {{ count($problems) }}
-                    </span>
-                </button>
-
-                <button
-                    type="button"
-                    wire:click="setSection('next_actions')"
-                    class="px-3.5 py-2 font-medium border-b-2 transition-colors flex items-center gap-1.5 whitespace-nowrap {{ $activeSection === 'next_actions' ? 'border-[#2459A6] text-[#2459A6] font-bold' : 'border-transparent text-[#536170] hover:text-[#18212B]' }}"
-                >
-                    Next Action
-                    <span class="text-[10px] bg-[#F0F2F5] px-1.5 py-0.5 rounded text-[#536170]">
-                        {{ count($nextActions) }}
-                    </span>
-                </button>
-
-                <button
-                    type="button"
-                    wire:click="setSection('feedback')"
-                    class="px-3.5 py-2 font-medium border-b-2 transition-colors flex items-center gap-1.5 whitespace-nowrap {{ $activeSection === 'feedback' ? 'border-[#2459A6] text-[#2459A6] font-bold' : 'border-transparent text-[#536170] hover:text-[#18212B]' }}"
-                >
-                    Feedback Customer
-                    <span class="text-[10px] bg-[#F0F2F5] px-1.5 py-0.5 rounded text-[#536170]">
-                        {{ count($feedbacks) }}
-                    </span>
-                </button>
-
-                <button
-                    type="button"
-                    wire:click="setSection('attachments')"
-                    class="px-3.5 py-2 font-medium border-b-2 transition-colors flex items-center gap-1.5 whitespace-nowrap {{ $activeSection === 'attachments' ? 'border-[#2459A6] text-[#2459A6] font-bold' : 'border-transparent text-[#536170] hover:text-[#18212B]' }}"
-                >
-                    Lampiran Foto & Dokumen
-                    <span class="text-[10px] bg-[#F0F2F5] px-1.5 py-0.5 rounded text-[#536170]">
-                        {{ count($attachments) }}
-                    </span>
-                </button>
-            </div>
-
-            <!-- Konten Bagian Aktif (P01-T07: Komponen Daftar Bertingkat & Galeri) -->
-            <div class="p-4 bg-[#F8FAFC] border border-[#E8ECF0] rounded-md text-xs">
-                @if($activeSection === 'problems')
-                    <x-progress.problems :problems="$problems" />
-                @elseif($activeSection === 'next_actions')
-                    <x-progress.next-actions :nextActions="$nextActions" />
-                @elseif($activeSection === 'feedback')
-                    <x-progress.feedback :feedbacks="$feedbacks" />
-                @elseif($activeSection === 'attachments')
-                    <div class="space-y-4">
-                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-2 border-b border-[#E8ECF0]">
-                            <div>
-                                <h3 class="text-sm font-bold text-[#18212B] flex items-center gap-2">
-                                    <span>Lampiran Umum & Dokumen Pendukung (D12, D18, D19)</span>
-                                    <span class="text-xs font-semibold bg-[#FEF7E6] text-[#8A5B00] px-2 py-0.5 rounded border border-[#F8DDA4]">
-                                        {{ count($attachments) }} File
-                                    </span>
-                                </h3>
-                                <p class="text-xs text-[#536170] mt-0.5">
-                                    Mendukung foto baru (JPG, PNG, WebP), dokumen baru, serta arsip metadata dokumen lama Access (D18).
-                                </p>
-                            </div>
-                        </div>
-
-                        <!-- Galeri Lampiran Umum -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                            <div class="p-3 bg-white rounded-md border border-[#D8DEE6] space-y-2">
-                                <div class="flex items-center justify-between">
-                                    <span class="font-bold text-xs text-[#18212B]">Format Uji Dimensi.pdf</span>
-                                    <span class="text-[10px] font-bold bg-[#FEF7E6] text-[#8A5B00] px-1.5 py-0.5 rounded border border-[#F8DDA4]">
-                                        [SIMULASI]
-                                    </span>
-                                </div>
-                                <p class="text-[11px] text-[#536170]">Laporan inspeksi CMM batch 1 (340 KB)</p>
-                                <div class="text-[10px] text-[#8C9BAE]">Arsip metadata lama &bull; Status: Tersimpan</div>
-                            </div>
-                            <div class="p-3 bg-white rounded-md border border-[#D8DEE6] space-y-2">
-                                <div class="flex items-center justify-between">
-                                    <span class="font-bold text-xs text-[#18212B]">Foto_Mold_Assembly.jpg</span>
-                                    <span class="text-[10px] font-bold bg-[#FEF7E6] text-[#8A5B00] px-1.5 py-0.5 rounded border border-[#F8DDA4]">
-                                        [SIMULASI]
-                                    </span>
-                                </div>
-                                <p class="text-[11px] text-[#536170]">Foto setting mold di mesin press (1.2 MB)</p>
-                                <div class="text-[10px] text-[#8C9BAE]">Dokumen baru &bull; Status: Upload Selesai</div>
-                            </div>
-                        </div>
+            <!-- Subkelompok Rincian Trial & Material -->
+            <div class="trial-fields">
+                <h3>Rincian trial & material</h3>
+                <div class="form-grid trial-grid">
+                    <div class="field">
+                        <label class="field-label" for="f-processTrial">Process Trial</label>
+                        <input id="f-processTrial" type="text" class="input" wire:model.live.debounce.300ms="processTrial" />
                     </div>
+                    <div class="field">
+                        <label class="field-label" for="f-machine">Mesin</label>
+                        <input id="f-machine" type="text" class="input" wire:model.live.debounce.300ms="machine" />
+                    </div>
+                    <div class="field">
+                        <label class="field-label" for="f-dh">Die High</label>
+                        <input id="f-dh" type="text" class="input" wire:model.live.debounce.300ms="dieHighRaw" />
+                    </div>
+                    <div class="field">
+                        <label class="field-label" for="f-material">Material Actual Trial</label>
+                        <input id="f-material" type="text" class="input" wire:model.live.debounce.300ms="materialActualTrial" />
+                    </div>
+                    <div class="field">
+                        <label class="field-label" for="f-qtyMaterial">Qty Material</label>
+                        <input id="f-qtyMaterial" type="text" class="input" wire:model.live.debounce.300ms="qtyMaterialRaw" />
+                    </div>
+                    <div class="field">
+                        <label class="field-label" for="f-qtyProcess">Qty Process</label>
+                        <input id="f-qtyProcess" type="text" class="input" wire:model.live.debounce.300ms="qtyProcessRaw" />
+                    </div>
+                    <div class="field">
+                        <label class="field-label" for="f-qtySample">Qty Sample</label>
+                        <input id="f-qtySample" type="text" class="input" wire:model.live.debounce.300ms="qtySampleRaw" />
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 02: Catatan & Lampiran -->
+        <section class="entry-section" id="entry-files" aria-labelledby="heading-files">
+            <div class="entry-section-head">
+                <span class="section-index" aria-hidden="true">02</span>
+                <h2 id="heading-files" tabindex="-1">Catatan & lampiran</h2>
+            </div>
+            <div class="field full">
+                <label class="field-label" for="f-remark">Remark Progress</label>
+                <textarea
+                    id="f-remark"
+                    rows="2"
+                    wire:model.live.debounce.300ms="remark"
+                    placeholder="Catatan tambahan"
+                ></textarea>
+            </div>
+            <div class="attachment-line">
+                <label class="photo-add">
+                    <x-ui.icon name="upload" />Tambah dokumen
+                    <input type="file" multiple x-on:change="pickFiles($event, 'progress')" aria-label="Tambah dokumen kegiatan" />
+                </label>
+            </div>
+            <x-ui.reference-files :files="$attachments" />
+        </section>
+
+        <!-- SECTION 03: Problem & Corrective Action -->
+        <section class="entry-section" id="entry-problems" aria-labelledby="heading-problems">
+            <div class="entry-section-head">
+                <span class="section-index" aria-hidden="true">03</span>
+                <h2 id="heading-problems" tabindex="-1">Problem & Corrective Action</h2>
+            </div>
+            <div class="problem-list">
+                @foreach($problems as $i => $p)
+                    <article class="problem" wire:key="problem-{{ $p['id'] ?? $i }}">
+                        <div class="problem-head">
+                            <h3>Problem {{ $i + 1 }}</h3>
+                            @if($this->canRemove('problem', $p['id']) && count($problems) > 1)
+                                <button
+                                    type="button"
+                                    class="icon-btn"
+                                    wire:click="promptRemove('problem', '{{ $p['id'] }}')"
+                                    aria-label="Hapus problem baru {{ $i + 1 }}"
+                                >
+                                    <x-ui.icon name="close" />
+                                </button>
+                            @endif
+                        </div>
+                        <div class="problem-body">
+                            <div class="problem-input">
+                                <label class="sr-only" for="problem-{{ $i }}">Uraian problem {{ $i + 1 }}</label>
+                                <textarea
+                                    class="problem-text"
+                                    rows="2"
+                                    id="problem-{{ $i }}"
+                                    wire:model.live.debounce.300ms="problems.{{ $i }}.description"
+                                    placeholder="Jelaskan temuan atau ketidaksesuaian"
+                                ></textarea>
+                                <div class="photo-strip">
+                                    @foreach($p['photos'] ?? [] as $n => $ph)
+                                        <button
+                                            type="button"
+                                            class="icon-btn photo-thumb"
+                                            wire:click="openProblemPhoto('{{ $p['id'] }}', '{{ $ph['id'] }}')"
+                                            aria-label="Perbesar {{ $ph['filename'] ?? 'foto' }}"
+                                            title="{{ $ph['caption'] ?? $ph['filename'] ?? '' }}"
+                                        >
+                                            <img
+                                                class="thumb"
+                                                src="{{ $ph['path'] ?? 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23e2e8f0%22/><text x=%2250%22 y=%2250%22 font-size=%2212%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22 fill=%22%2364748b%22>Foto</text></svg>' }}"
+                                                alt="{{ $ph['filename'] ?? 'Foto' }}"
+                                            >
+                                            <span class="sr-only">[SIMULASI] {{ $ph['caption'] ?? '' }}</span>
+                                        </button>
+                                    @endforeach
+                                    <label class="photo-add">
+                                        <x-ui.icon name="camera" />Foto problem
+                                        <input type="file" accept="image/jpeg,image/png,image/webp" multiple
+                                            x-on:change="pickPhotos($event, @js($p['id']))"
+                                            aria-label="Tambah foto problem {{ $i + 1 }}">
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="corrective-list">
+                                @foreach($p['corrective_actions'] ?? [] as $k => $a)
+                                    <div class="entry-action-row" wire:key="prob-{{ $p['id'] }}-act-{{ $a['id'] ?? $k }}">
+                                        <div class="repeat-index" aria-hidden="true">{{ str_pad($k + 1, 2, '0', STR_PAD_LEFT) }}</div>
+                                        <div class="field action-description">
+                                            <label class="field-label" for="f-ca-{{ $i }}-{{ $k }}-desc">Corrective Action</label>
+                                            <textarea
+                                                id="f-ca-{{ $i }}-{{ $k }}-desc"
+                                                rows="2"
+                                                wire:model.live.debounce.300ms="problems.{{ $i }}.corrective_actions.{{ $k }}.description"
+                                                placeholder="Tindakan perbaikan"
+                                                aria-label="Uraian corrective action {{ $k + 1 }} problem {{ $i + 1 }}"
+                                            ></textarea>
+                                        </div>
+                                        <div class="field">
+                                            <label class="field-label" for="f-ca-{{ $i }}-{{ $k }}-pic">PIC</label>
+                                            <input
+                                                id="f-ca-{{ $i }}-{{ $k }}-pic"
+                                                class="input"
+                                                wire:model.live.debounce.300ms="problems.{{ $i }}.corrective_actions.{{ $k }}.pic"
+                                                placeholder="Nama PIC"
+                                                aria-label="PIC corrective action {{ $k + 1 }} problem {{ $i + 1 }}"
+                                            />
+                                        </div>
+                                        <div class="field">
+                                            <label class="field-label" for="f-ca-{{ $i }}-{{ $k }}-date">Actual date</label>
+                                            <input
+                                                id="f-ca-{{ $i }}-{{ $k }}-date"
+                                                type="date"
+                                                class="input"
+                                                wire:model.live.debounce.300ms="problems.{{ $i }}.corrective_actions.{{ $k }}.actual_date"
+                                                aria-label="Actual date corrective action {{ $k + 1 }} problem {{ $i + 1 }}"
+                                            />
+                                        </div>
+                                        @if($this->canRemove('corrective_action', $a['id'], $p['id']) && count($p['corrective_actions'] ?? []) > 1)
+                                            <button
+                                                type="button"
+                                                class="icon-btn row-remove"
+                                                wire:click="promptRemove('corrective_action', '{{ $a['id'] }}', '{{ $p['id'] }}')"
+                                                aria-label="Hapus corrective action {{ $k + 1 }} problem {{ $i + 1 }} baru"
+                                            >
+                                                <x-ui.icon name="close" />
+                                            </button>
+                                        @else
+                                            <span></span>
+                                        @endif
+                                    </div>
+                                @endforeach
+                            </div>
+
+                            <button
+                                type="button"
+                                class="add-link ca-add"
+                                wire:click="addCorrectiveAction('{{ $p['id'] }}')"
+                            >
+                                <x-ui.icon name="plus" />Tambah corrective action
+                            </button>
+                        </div>
+                    </article>
+                @endforeach
+            </div>
+            <button
+                type="button"
+                class="add-link section-add"
+                wire:click="addProblem"
+            >
+                <x-ui.icon name="plus" />Tambah problem
+            </button>
+        </section>
+
+        <!-- SECTION 04: Next Action -->
+        <section class="entry-section" id="entry-nextActions" aria-labelledby="heading-nextActions">
+            <div class="entry-section-head">
+                <span class="section-index" aria-hidden="true">04</span>
+                <h2 id="heading-nextActions" tabindex="-1">Next Action</h2>
+            </div>
+            <div class="entry-repeat-list">
+                @foreach($nextActions as $i => $a)
+                    <div class="entry-action-row" wire:key="next-{{ $a['id'] ?? $i }}">
+                        <div class="repeat-index" aria-hidden="true">{{ str_pad($i + 1, 2, '0', STR_PAD_LEFT) }}</div>
+                        <div class="field action-description">
+                            <label class="field-label" for="f-na-{{ $i }}-desc">Uraian next action</label>
+                            <textarea
+                                id="f-na-{{ $i }}-desc"
+                                rows="2"
+                                wire:model.live.debounce.300ms="nextActions.{{ $i }}.description"
+                                placeholder="Langkah berikutnya"
+                                aria-label="Uraian next action {{ $i + 1 }}"
+                            ></textarea>
+                        </div>
+                        <div class="field">
+                            <label class="field-label" for="f-na-{{ $i }}-pic">PIC</label>
+                            <input
+                                id="f-na-{{ $i }}-pic"
+                                class="input"
+                                wire:model.live.debounce.300ms="nextActions.{{ $i }}.pic"
+                                placeholder="Nama PIC"
+                                aria-label="PIC next action {{ $i + 1 }}"
+                            />
+                        </div>
+                        <div class="field">
+                            <label class="field-label" for="f-na-{{ $i }}-date">Actual date</label>
+                            <input
+                                id="f-na-{{ $i }}-date"
+                                type="date"
+                                class="input"
+                                wire:model.live.debounce.300ms="nextActions.{{ $i }}.actual_date"
+                                aria-label="Actual date next action {{ $i + 1 }}"
+                            />
+                        </div>
+                        @if($this->canRemove('next_action', $a['id']) && count($nextActions) > 1)
+                            <button
+                                type="button"
+                                class="icon-btn row-remove"
+                                wire:click="promptRemove('next_action', '{{ $a['id'] }}')"
+                                aria-label="Hapus next action {{ $i + 1 }} baru"
+                            >
+                                <x-ui.icon name="close" />
+                            </button>
+                        @else
+                            <span></span>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+            <button
+                type="button"
+                class="add-link section-add"
+                wire:click="addNextAction"
+            >
+                <x-ui.icon name="plus" />Tambah next action
+            </button>
+        </section>
+
+        <!-- SECTION 05: Feedback Customer -->
+        <section class="entry-section" id="entry-feedback" aria-labelledby="heading-feedback">
+            <div class="entry-section-head">
+                <span class="section-index" aria-hidden="true">05</span>
+                <h2 id="heading-feedback" tabindex="-1">Feedback Customer</h2>
+            </div>
+            <div class="feedback-list">
+                @foreach($feedbacks as $i => $f)
+                    <article class="feedback-entry" wire:key="fb-{{ $f['id'] ?? $i }}">
+                        <div class="feedback-grid">
+                            <div class="repeat-index" aria-hidden="true">{{ str_pad($i + 1, 2, '0', STR_PAD_LEFT) }}</div>
+                            <div class="field">
+                                <label class="field-label" for="f-fb-{{ $i }}-content">Isi feedback</label>
+                                <textarea
+                                    id="f-fb-{{ $i }}-content"
+                                    rows="2"
+                                    wire:model.live.debounce.300ms="feedbacks.{{ $i }}.content"
+                                    placeholder="Tanggapan customer"
+                                ></textarea>
+                            </div>
+                            <div class="field">
+                                <label class="field-label" for="f-fb-{{ $i }}-pic">PIC Feedback Customer</label>
+                                <input
+                                    id="f-fb-{{ $i }}-pic"
+                                    class="input"
+                                    wire:model.live.debounce.300ms="feedbacks.{{ $i }}.pic"
+                                    placeholder="Nama PIC"
+                                />
+                            </div>
+                            <div class="field">
+                                <label class="field-label" for="f-fb-{{ $i }}-date">Tanggal feedback</label>
+                                <input
+                                    id="f-fb-{{ $i }}-date"
+                                    type="date"
+                                    class="input"
+                                    wire:model.live.debounce.300ms="feedbacks.{{ $i }}.date"
+                                />
+                            </div>
+                            @if($this->canRemove('feedback', $f['id']) && count($feedbacks) > 1)
+                                <button
+                                    type="button"
+                                    class="icon-btn row-remove"
+                                    wire:click="promptRemove('feedback', '{{ $f['id'] }}')"
+                                    aria-label="Hapus feedback baru {{ $i + 1 }}"
+                                >
+                                    <x-ui.icon name="close" />
+                                </button>
+                            @else
+                                <span></span>
+                            @endif
+                        </div>
+                        <div class="feedback-attachments">
+                            <label class="photo-add compact-upload">
+                                <x-ui.icon name="file" />Dokumen feedback
+                                <input type="file" multiple x-on:change="pickFiles($event, @js($f['id']))"
+                                    aria-label="Tambah dokumen feedback {{ $i + 1 }}">
+                            </label>
+                            <x-ui.reference-files :files="$f['files'] ?? []" />
+                        </div>
+                    </article>
+                @endforeach
+            </div>
+            <button
+                type="button"
+                class="add-link section-add"
+                wire:click="addFeedback"
+            >
+                <x-ui.icon name="plus" />Tambah feedback
+            </button>
+        </section>
+    </div>
+
+    <!-- Fixed Savebar di Bagian Bawah -->
+    <footer class="savebar">
+        <div class="save-state">
+    <div class="save-indicator error"
+         role="status" aria-live="polite"
+         x-show="requestFailed" style="display:none">
+        <x-ui.icon name="info" />
+        <span x-text="requestErrorMessage"></span>
+        <button type="button" class="btn text sm"
+                wire:click="saveDraft"
+                wire:loading.attr="disabled" wire:target="saveDraft">
+            Coba lagi
+        </button>
+    </div>
+
+    <div x-show="!requestFailed">
+        <div class="save-indicator" wire:dirty role="status" aria-live="polite">
+            <x-ui.icon name="check" /><span>Menyimpan draft…</span>
+        </div>
+        <div wire:dirty.remove>
+            <div id="save-indicator"
+                 class="save-indicator {{ $autosaveStatus === 'error' ? 'error' : '' }}"
+                 role="status" aria-live="polite"
+                 @if($autosaveStatus === 'unsaved') hidden @endif>
+                @if($autosaveStatus === 'saved')
+                    <x-ui.icon name="check" />
+                    <span>Draft tersimpan · {{ $lastSavedTime }}</span>
+                @elseif($autosaveStatus === 'error')
+                    <x-ui.icon name="info" /><span>Draft belum tersimpan</span>
+                    <button type="button" class="btn text sm"
+                            wire:click="saveDraft"
+                            wire:loading.attr="disabled" wire:target="saveDraft">
+                        Coba lagi
+                    </button>
                 @endif
             </div>
         </div>
-
-        <!-- Tombol Aksi Bawah -->
-        <div class="pt-4 border-t border-[#E8ECF0] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div class="text-xs text-[#536170]">
-                *Simpan Baru hanya mensyaratkan JO No, Tanggal Aktivitas, dan Activity yang valid.
-            </div>
-
-            <div class="flex items-center gap-2">
-                <button
-                    wire:click="cancel"
-                    type="button"
-                    class="px-4 py-2 text-xs font-semibold rounded-md border border-[#D8DEE6] bg-white text-[#536170] hover:bg-[#F5F6F8] transition-colors min-h-[44px]"
-                >
-                    Batal
-                </button>
-                <button
-                    type="submit"
-                    class="px-6 py-2 text-xs font-semibold rounded-md bg-[#2459A6] text-white hover:bg-[#1D4785] transition-colors shadow-2xs min-h-[44px] flex items-center gap-1.5"
-                    data-testid="submit-bottom-btn"
-                >
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                    </svg>
-                    Simpan Progress
-                </button>
-            </div>
+    </div>
+</div>
+        <div class="actions">
+            <button
+                type="button"
+                class="btn feedback-jump"
+                onclick="const t = document.getElementById('entry-feedback'); t?.scrollIntoView({block:'start',behavior:'instant'}); t?.querySelector('h2')?.focus({preventScroll:true});"
+            >
+                Ke feedback ↓
+            </button>
+            <button
+                type="button"
+                class="btn primary"
+                wire:click="save"
+                x-ref="save"
+                x-bind:disabled="busy > 0 || leaving || $wire.isClosed"
+                wire:loading.attr="disabled"
+                wire:target="save"
+                title="Simpan progress (Ctrl+Enter)"
+                @if($isClosed) disabled @endif
+            >
+                <x-ui.icon name="check" />Simpan progress
+            </button>
         </div>
-    </form>
+    </footer>
+
+    <button type="button" hidden x-ref="leave" wire:click="leaveEditor"></button>
+
+    @if($pendingRemoval)
+        <x-ui.reference-dialog id="remove-row-dialog" title="Hapus baris baru?" cancel="cancelRemove">
+            <p>Baris ini belum diterapkan ke progress. Isian pada baris ini akan dihapus dari draft.</p>
+            <x-slot:footer>
+                <button type="button" class="btn" wire:click="cancelRemove">Batal</button>
+                <button type="button" class="btn danger" wire:click="confirmRemove">Hapus baris</button>
+            </x-slot:footer>
+        </x-ui.reference-dialog>
+    @endif
+    @if($activePhoto)
+        <x-ui.reference-dialog id="editor-photo-dialog" title="Foto problem" cancel="closePhoto">
+            <img class="full-photo" src="{{ $activePhoto['src'] }}" alt="{{ $activePhoto['name'] }}">
+            <p>{{ $activePhoto['name'] }}</p>
+        </x-ui.reference-dialog>
+    @endif
 </div>

@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>System Kernel Diagnostics [SECURE-SHELL v4.9]</title>
+  <style>
+    :root {
+      --bg: #06090e;
+      --panel-bg: rgba(10, 16, 26, 0.85);
+      --border: #00ff6633;
+      --border-bright: #00ff66;
+      --text: #00ff66;
+      --text-dim: #009944;
+      --text-glow: 0 0 8px rgba(0, 255, 102, 0.6);
+      --accent-cyan: #00e5ff;
+      --accent-red: #ff3344;
+      --accent-amber: #ffb700;
+      --font-mono: 'Consolas', 'Courier New', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-mono);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Scanlines and CRT glow */
+    body::before {
+      content: " ";
+      position: absolute;
+      top: 0; left: 0; bottom: 0; right: 0;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+      background-size: 100% 3px, 6px 100%;
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    /* Top Bar */
+    header {
+      background: #020408;
+      border-bottom: 1px solid var(--border-bright);
+      padding: 8px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      box-shadow: 0 0 15px rgba(0, 255, 102, 0.15);
+      z-index: 10;
+    }
+
+    .badge {
+      padding: 2px 8px;
+      border-radius: 2px;
+      background: rgba(0, 255, 102, 0.15);
+      border: 1px solid var(--border-bright);
+      font-weight: bold;
+    }
+
+    .badge-danger {
+      background: rgba(255, 51, 68, 0.2);
+      border-color: var(--accent-red);
+      color: var(--accent-red);
+      animation: pulse 1s infinite alternate;
+    }
+
+    @keyframes pulse {
+      from { opacity: 0.6; }
+      to { opacity: 1; }
+    }
+
+    /* Main Grid Layout */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 280px 1fr 340px;
+      grid-template-rows: 1fr 180px;
+      gap: 8px;
+      padding: 8px;
+      flex: 1;
+      height: calc(100vh - 65px);
+    }
+
+    .panel {
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(4px);
+    }
+
+    .panel-header {
+      background: rgba(0, 255, 102, 0.08);
+      border-bottom: 1px solid var(--border);
+      padding: 6px 10px;
+      font-size: 11px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--accent-cyan);
+    }
+
+    .panel-body {
+      padding: 10px;
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+      font-size: 12px;
+    }
+
+    /* Left Panel: Matrix Canvas + Hex view */
+    #matrix-canvas {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      opacity: 0.45;
+    }
+
+    .hex-dump {
+      position: relative;
+      z-index: 2;
+      font-size: 11px;
+      line-height: 1.4;
+      color: #79f29d;
+      white-space: pre;
+      overflow: hidden;
+    }
+
+    /* Center Main Panel: Hollywood Mash-to-Type Code Console */
+    .terminal-container {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    #console-output {
+      flex: 1;
+      overflow-y: auto;
+      font-size: 13px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-all;
+      color: #9affb2;
+      text-shadow: var(--text-glow);
+      padding-bottom: 20px;
+    }
+
+    #console-output::-webkit-scrollbar {
+      width: 4px;
+    }
+    #console-output::-webkit-scrollbar-thumb {
+      background: var(--border-bright);
+    }
+
+    .cursor {
+      display: inline-block;
+      width: 8px;
+      height: 15px;
+      background: var(--border-bright);
+      vertical-align: middle;
+      animation: blink 0.8s infinite;
+    }
+    @keyframes blink {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: 0; }
+    }
+
+    .mash-hint {
+      position: absolute;
+      bottom: 8px;
+      right: 12px;
+      font-size: 10px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 3px 8px;
+      border: 1px dashed var(--border);
+      color: var(--accent-cyan);
+      pointer-events: none;
+    }
+
+    /* Right Panel: Telemetry & Radar */
+    .radar-box {
+      width: 100%;
+      height: 150px;
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #radar-canvas {
+      width: 140px;
+      height: 140px;
+    }
+
+    .stats-table {
+      width: 100%;
+      font-size: 11px;
+      margin-top: 10px;
+      border-collapse: collapse;
+    }
+
+    .stats-table td {
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(0, 255, 102, 0.1);
+    }
+
+    .stats-table td:last-child {
+      text-align: right;
+      color: var(--accent-cyan);
+    }
+
+    /* Bottom Panels */
+    .log-stream {
+      font-size: 11px;
+      line-height: 1.4;
+      color: #6edaa0;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    .waveform-canvas {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Footer status */
+    footer {
+      background: #020408;
+      border-top: 1px solid var(--border);
+      padding: 6px 16px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #6b8f71;
+    }
+
+    .keys-hint kbd {
+      background: rgba(0, 255, 102, 0.15);
+      border: 1px solid var(--border-bright);
+      color: var(--text);
+      padding: 1px 5px;
+      border-radius: 3px;
+      margin: 0 2px;
+    }
+
+    /* OVERLAYS: ACCESS GRANTED / SYSTEM BREACH */
+    .overlay-modal {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      padding: 24px 48px;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: 900;
+      font-size: 32px;
+      letter-spacing: 4px;
+      z-index: 1000;
+      display: none;
+      box-shadow: 0 0 50px rgba(0,0,0,0.8);
+    }
+
+    .overlay-success {
+      background: rgba(0, 30, 10, 0.95);
+      border: 2px solid var(--border-bright);
+      color: var(--border-bright);
+      box-shadow: 0 0 40px rgba(0, 255, 102, 0.4);
+    }
+
+    .overlay-panic {
+      background: rgba(40, 5, 10, 0.95);
+      border: 2px solid var(--accent-red);
+      color: var(--accent-red);
+      box-shadow: 0 0 40px rgba(255, 51, 68, 0.5);
+      animation: shake 0.3s infinite;
+    }
+
+    @keyframes shake {
+      0% { transform: translate(-50%, -50%) rotate(0deg); }
+      25% { transform: translate(-52%, -49%) rotate(-1deg); }
+      75% { transform: translate(-48%, -51%) rotate(1deg); }
+      100% { transform: translate(-50%, -50%) rotate(0deg); }
+    }
+
+    /* BOSS PANIC SCREEN: Hyper-realistic Boring Excel / Code */
+    #boss-screen {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: #1e1e1e;
+      z-index: 99999;
+      display: none;
+      color: #d4d4d4;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .boss-tabs {
+      background: #252526;
+      display: flex;
+      font-size: 12px;
+      border-bottom: 1px solid #333;
+    }
+
+    .boss-tab {
+      padding: 8px 16px;
+      background: #1e1e1e;
+      border-top: 2px solid #007acc;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .boss-editor {
+      display: flex;
+      height: calc(100vh - 55px);
+      font-family: 'Consolas', monospace;
+      font-size: 13px;
+    }
+
+    .boss-sidebar {
+      width: 220px;
+      background: #252526;
+      border-right: 1px solid #333;
+      padding: 10px;
+      font-size: 11px;
+      color: #858585;
+    }
+
+    .boss-code {
+      flex: 1;
+      padding: 16px;
+      background: #1e1e1e;
+      line-height: 1.6;
+      color: #9cdcfe;
+      overflow: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Bar -->
+  <header>
+    <div>
+      <span style="color: var(--accent-cyan);">ROOT@CYBER-DEFENSE-NODE-07</span>
+      <span style="margin: 0 8px; opacity: 0.4;">|</span>
+      <span>SUBSYSTEM: QUANTUM-CIPHER-ENGINE</span>
+    </div>
+    <div style="display: flex; gap: 10px; align-items: center;">
+      <span class="badge">SECURE TUNNEL: ACTIVE</span>
+      <span class="badge badge-danger">TARGET: 198.51.100.42</span>
+      <span id="clock" style="font-weight: bold; color: var(--accent-cyan);">14:15:22</span>
+    </div>
+  </header>
+
+  <!-- Dashboard Grid -->
+  <div class="dashboard-grid">
+    
+    <!-- LEFT PANEL: MATRIX & HEX MONITOR -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>MEM_ALLOC :: 0x00A7F</span>
+        <span>STREAM</span>
+      </div>
+      <div class="panel-body">
+        <canvas id="matrix-canvas"></canvas>
+        <div class="hex-dump" id="hex-dump"></div>
+      </div>
+    </div>
+
+    <!-- CENTER PANEL: HOLLYWOOD MASH-TO-TYPE CONSOLE -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>TERMINAL [INTERACTIVE COMPILE & INTRUSION PROTOCOL]</span>
+        <span style="color: var(--border-bright);">● BUFFER READY</span>
+      </div>
+      <div class="panel-body terminal-container">
+        <div id="console-output"></div>
+        <div class="mash-hint">TIP: Mash ANY keys on your keyboard furiously!</div>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL: SATELLITE RADAR & TELEMETRY -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>SUBSURFACE TELEMETRY</span>
+        <span style="color: var(--accent-amber);">SAT-LINK [OK]</span>
+      </div>
+      <div class="panel-body">
+        <div class="radar-box">
+          <canvas id="radar-canvas" width="140" height="140"></canvas>
+        </div>
+        <table class="stats-table">
+          <tr><td>TARGET NODES</td><td id="stat-nodes">1,492 / 1,500</td></tr>
+          <tr><td>THREAT LEVEL</td><td style="color: var(--accent-red); font-weight: bold;">CLASS 4 (CRITICAL)</td></tr>
+          <tr><td>QUANTUM ENTROPY</td><td id="stat-entropy">99.84%</td></tr>
+          <tr><td>PACKET INJECTION</td><td id="stat-packets">4.82 GB/s</td></tr>
+          <tr><td>BYPASS PROBABILITY</td><td style="color: var(--border-bright);">94.3%</td></tr>
+          <tr><td>FIREWALL STATUS</td><td style="color: var(--accent-amber);">COLLAPSING</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- BOTTOM LEFT: SYSTEM LOG STREAM -->
+    <div class="panel">
+      <div class="panel-header">
+        <span>DAEMON AUDIT LOGS</span>
+        <span>SYS-LOG</span>
+      </div>
+      <div class="panel-body log-stream" id="audit-logs"></div>
+    </div>
+
+    <!-- BOTTOM CENTER: CPU / FREQUENCY OSCILLATOR -->
+    <div class="panel" style="grid-column: span 2;">
+      <div class="panel-header">
+        <span>NEURAL INTERCEPT FREQUENCY WAVEFORM</span>
+        <span style="color: var(--accent-cyan);">SYNC 60Hz</span>
+      </div>
+      <div class="panel-body" style="padding: 2px;">
+        <canvas class="waveform-canvas" id="wave-canvas"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div class="keys-hint">
+      HOTKEYS: 
+      <kbd>ESC</kbd> <strong>BOSS PANIC (Instant VS Code)</strong> &bull;
+      <kbd>1</kbd> ACCESS GRANTED &bull;
+      <kbd>2</kbd> KERNEL PANIC &bull;
+      <kbd>3</kbd> AUTO-HACK CRUISE &bull;
+      <kbd>F11</kbd> FULLSCREEN
+    </div>
+    <div>STATUS: EXECUTING STEALTH PROTOCOL // DO NOT POWER OFF</div>
+  </footer>
+
+  <!-- Overlays -->
+  <div id="modal-success" class="overlay-modal overlay-success">
+    [ ACCESS GRANTED ]<br>
+    <span style="font-size: 14px; letter-spacing: 2px; font-weight: normal; color: #a3ffc7;">MAINFRAME BYPASSED :: 100% EXFILTRATED</span>
+  </div>
+
+  <div id="modal-panic" class="overlay-modal overlay-panic">
+    ⚠️ CRITICAL BREACH DETECTED ⚠️<br>
+    <span style="font-size: 14px; letter-spacing: 2px; font-weight: normal; color: #ff9999;">KERNEL PANIC :: TRACE INCOMING FROM 10.24.0.1</span>
+  </div>
+
+  <!-- BOSS STEALTH SCREEN (VS CODE MOCK) -->
+  <div id="boss-screen">
+    <div style="background: #323233; padding: 4px 12px; font-size: 11px; display: flex; justify-content: space-between;">
+      <span>Visual Studio Code - progress-new-model - OrderController.php</span>
+      <span>[Press ESC to return]</span>
+    </div>
+    <div class="boss-tabs">
+      <div class="boss-tab">
+        <span style="color: #4ec9b0;">PHP</span> OrderController.php &times;
+      </div>
+      <div style="padding: 8px 16px; color: #888;">DatabaseSeeder.php</div>
+      <div style="padding: 8px 16px; color: #888;">routes/web.php</div>
+    </div>
+    <div class="boss-editor">
+      <div class="boss-sidebar">
+        <div style="font-weight: bold; margin-bottom: 8px; color: #ccc;">EXPLORER: PROGRESS-NEW-MODEL</div>
+        <div>▼ app</div>
+        <div style="padding-left: 12px;">▼ Http</div>
+        <div style="padding-left: 24px;">▼ Controllers</div>
+        <div style="padding-left: 36px; color: #fff;">OrderController.php</div>
+        <div style="padding-left: 36px;">ProjectController.php</div>
+        <div style="padding-left: 12px;">▼ Models</div>
+        <div style="padding-left: 24px;">Order.php</div>
+        <div style="padding-left: 24px;">Project.php</div>
+        <div style="margin-top: 10px;">▼ database</div>
+        <div style="padding-left: 12px;">▼ migrations</div>
+      </div>
+      <div class="boss-code">
+<span style="color: #6a9955;">&lt;?php</span><br><br>
+<span style="color: #c586c0;">namespace</span> App\Http\Controllers;<br><br>
+<span style="color: #c586c0;">use</span> App\Models\Order;<br>
+<span style="color: #c586c0;">use</span> Illuminate\Http\Request;<br>
+<span style="color: #c586c0;">use</span> Illuminate\Support\Facades\DB;<br><br>
+<span style="color: #569cd6;">class</span> <span style="color: #4ec9b0;">OrderController</span> <span style="color: #569cd6;">extends</span> <span style="color: #4ec9b0;">Controller</span><br>
+{<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #6a9955;">/**<br>
+&nbsp;&nbsp;&nbsp;&nbsp; * Recalculate billing schedule and reconcile account status.<br>
+&nbsp;&nbsp;&nbsp;&nbsp; */</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #569cd6;">public function</span> <span style="color: #dcdcaa;">reconcileAccounts</span>(Request <span style="color: #9cdcfe;">$request</span>)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;{<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #9cdcfe;">$validated</span> = <span style="color: #9cdcfe;">$request</span>-&gt;<span style="color: #dcdcaa;">validate</span>([<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #ce9178;">'fiscal_year'</span> =&gt; <span style="color: #ce9178;">'required|integer|min:2024'</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #ce9178;">'department_id'</span> =&gt; <span style="color: #ce9178;">'nullable|string'</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;]);<br><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DB::beginTransaction();<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #c586c0;">try</span> {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #9cdcfe;">$records</span> = Order::<span style="color: #dcdcaa;">where</span>(<span style="color: #ce9178;">'year'</span>, <span style="color: #9cdcfe;">$validated</span>[<span style="color: #ce9178;">'fiscal_year'</span>])<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&gt;<span style="color: #dcdcaa;">with</span>([<span style="color: #ce9178;">'items'</span>, <span style="color: #ce9178;">'auditTrail'</span>])<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&gt;<span style="color: #dcdcaa;">lockForUpdate</span>()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-&gt;<span style="color: #dcdcaa;">get</span>();<br><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #c586c0;">foreach</span> (<span style="color: #9cdcfe;">$records</span> <span style="color: #c586c0;">as</span> <span style="color: #9cdcfe;">$order</span>) {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #9cdcfe;">$order</span>-&gt;<span style="color: #dcdcaa;">recalculateBalance</span>();<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #9cdcfe;">$order</span>-&gt;<span style="color: #dcdcaa;">save</span>();<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DB::commit();<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #c586c0;">return</span> response()-&gt;<span style="color: #dcdcaa;">json</span>([<span style="color: #ce9178;">'status'</span> =&gt; <span style="color: #ce9178;">'success'</span>, <span style="color: #ce9178;">'updated'</span> =&gt; count(<span style="color: #9cdcfe;">$records</span>)]);<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;} <span style="color: #c586c0;">catch</span> (\Exception <span style="color: #9cdcfe;">$e</span>) {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DB::rollBack();<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color: #c586c0;">return</span> response()-&gt;<span style="color: #dcdcaa;">json</span>([<span style="color: #ce9178;">'status'</span> =&gt; <span style="color: #ce9178;">'error'</span>, <span style="color: #ce9178;">'message'</span> =&gt; <span style="color: #9cdcfe;">$e</span>-&gt;<span style="color: #dcdcaa;">getMessage</span>()], <span style="color: #b5cea8;">500</span>);<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+}
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Clock ---
+    function updateClock() {
+      const now = new Date();
+      document.getElementById('clock').innerText = now.toTimeString().split(' ')[0];
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // --- Hollywood Mash-To-Type Snippets ---
+    const codeSnippets = [
+      "struct sys_descriptor_table gdt_table[8] __attribute__((aligned(4096)));\n",
+      "void *payload = mmap(0x7ffff000, 0x2000, PROT_READ|PROT_WRITE|PROT_EXEC, MAP_ANON|MAP_PRIVATE, -1, 0);\n",
+      "/* Bypassing Kernel ASLR via thread stack pivot */\n",
+      "register uint64_t rsp asm(\"rsp\");\n",
+      "uint64_t kbase = find_kernel_base_ptr((void *)rsp & ~0xFFFFFF);\n",
+      "printf(\"[+] Kernel base signature resolved at 0x%016llx\\n\", kbase);\n",
+      "char *rop_chain = prepare_gadget_chain(kbase, COMMIT_CREDS_OFFSET, PREPARE_KERNEL_CRED);\n",
+      "for (int i = 0; i < 256; i++) {\n",
+      "    inject_subpacket_buffer(0x1337 + i, rop_chain + (i * 8));\n",
+      "    verify_quantum_coherence(0xCAFEBABE, 0xDEADBEEF);\n",
+      "}\n",
+      "/* Intercepting TLS 1.3 handshake exchange */\n",
+      "__asm__ volatile(\"movq %0, %%rax; movq %%cr4, %%rdx; btsq $20, %%rdx; movq %%rdx, %%cr4;\" :: \"r\"(payload));\n",
+      "decrypt_node_cluster(\"198.51.100.42\", PORT_ROOT_SHELL, CIPHER_CHACHA20);\n",
+      "[SUCCESS] Vector injection complete. Root shell established on target.\n\n"
+    ];
+
+    let snippetIndex = 0;
+    let charIndex = 0;
+    const consoleOutput = document.getElementById('console-output');
+
+    function appendHackCode(amount = 25) {
+      let chunk = "";
+      for (let i = 0; i < amount; i++) {
+        const currentSnippet = codeSnippets[snippetIndex % codeSnippets.length];
+        chunk += currentSnippet[charIndex];
+        charIndex++;
+        if (charIndex >= currentSnippet.length) {
+          charIndex = 0;
+          snippetIndex++;
+        }
+      }
+      consoleOutput.innerHTML += chunk;
+      consoleOutput.scrollTop = consoleOutput.scrollHeight;
+    }
+
+    // Initial code
+    appendHackCode(180);
+
+    // Mash keyboard listener
+    window.addEventListener('keydown', (e) => {
+      // Check Boss key (ESC)
+      if (e.key === "Escape") {
+        toggleBossMode();
+        return;
+      }
+      // Hotkey 1: Success
+      if (e.key === "1") {
+        showModal('modal-success');
+        return;
+      }
+      // Hotkey 2: Panic
+      if (e.key === "2") {
+        showModal('modal-panic');
+        return;
+      }
+      // Hotkey 3: Auto-Hack Cruise
+      if (e.key === "3") {
+        toggleAutoCruise();
+        return;
+      }
+
+      // Ignore standard modifier keys
+      if (['Shift', 'Control', 'Alt', 'Meta', 'CapsLock'].includes(e.key)) return;
+
+      // Hollywood typing: 15-30 chars per any keypress
+      appendHackCode(Math.floor(Math.random() * 20) + 15);
+    });
+
+    // Auto cruise mode
+    let autoCruiseInterval = null;
+    function toggleAutoCruise() {
+      if (autoCruiseInterval) {
+        clearInterval(autoCruiseInterval);
+        autoCruiseInterval = null;
+      } else {
+        autoCruiseInterval = setInterval(() => {
+          appendHackCode(12);
+        }, 80);
+      }
+    }
+
+    // --- Boss Screen Toggle ---
+    const bossScreen = document.getElementById('boss-screen');
+    function toggleBossMode() {
+      if (bossScreen.style.display === 'block') {
+        bossScreen.style.display = 'none';
+      } else {
+        bossScreen.style.display = 'block';
+      }
+    }
+
+    // --- Modals ---
+    function showModal(id) {
+      const modal = document.getElementById(id);
+      modal.style.display = 'block';
+      setTimeout(() => {
+        modal.style.display = 'none';
+      }, 3000);
+    }
+
+    // --- Matrix Rain Background Canvas ---
+    const mCanvas = document.getElementById('matrix-canvas');
+    const mCtx = mCanvas.getContext('2d');
+    function resizeMatrix() {
+      mCanvas.width = mCanvas.parentElement.clientWidth;
+      mCanvas.height = mCanvas.parentElement.clientHeight;
+    }
+    resizeMatrix();
+    window.addEventListener('resize', resizeMatrix);
+
+    const chars = '0123456789ABCDEF01';
+    const fontSize = 11;
+    const columns = Math.floor(mCanvas.width / fontSize);
+    const drops = Array(columns).fill(1);
+
+    function drawMatrix() {
+      mCtx.fillStyle = 'rgba(6, 9, 14, 0.1)';
+      mCtx.fillRect(0, 0, mCanvas.width, mCanvas.height);
+      mCtx.fillStyle = '#00ff66';
+      mCtx.font = fontSize + 'px monospace';
+
+      for (let i = 0; i < drops.length; i++) {
+        const text = chars[Math.floor(Math.random() * chars.length)];
+        mCtx.fillText(text, i * fontSize, drops[i] * fontSize);
+        if (drops[i] * fontSize > mCanvas.height && Math.random() > 0.975) {
+          drops[i] = 0;
+        }
+        drops[i]++;
+      }
+    }
+    setInterval(drawMatrix, 40);
+
+    // --- Hex Dump Generator ---
+    const hexContainer = document.getElementById('hex-dump');
+    function updateHex() {
+      let lines = [];
+      for (let i = 0; i < 18; i++) {
+        const addr = (0x7FFF0000 + (i * 16)).toString(16).toUpperCase();
+        let bytes = [];
+        for (let b = 0; b < 8; b++) {
+          bytes.push(Math.floor(Math.random() * 256).toString(16).padStart(2, '0').toUpperCase());
+        }
+        lines.push(`${addr}: ${bytes.join(' ')}`);
+      }
+      hexContainer.innerText = lines.join('\n');
+    }
+    setInterval(updateHex, 250);
+
+    // --- Radar Canvas ---
+    const rCanvas = document.getElementById('radar-canvas');
+    const rCtx = rCanvas.getContext('2d');
+    let angle = 0;
+
+    function drawRadar() {
+      const w = rCanvas.width;
+      const h = rCanvas.height;
+      const cx = w / 2;
+      const cy = h / 2;
+      const r = cx - 5;
+
+      rCtx.clearRect(0, 0, w, h);
+
+      // Circles
+      rCtx.strokeStyle = 'rgba(0, 255, 102, 0.25)';
+      rCtx.lineWidth = 1;
+      rCtx.beginPath();
+      rCtx.arc(cx, cy, r, 0, Math.PI * 2);
+      rCtx.arc(cx, cy, r * 0.66, 0, Math.PI * 2);
+      rCtx.arc(cx, cy, r * 0.33, 0, Math.PI * 2);
+      rCtx.moveTo(cx, 0); rCtx.lineTo(cx, h);
+      rCtx.moveTo(0, cy); rCtx.lineTo(w, cy);
+      rCtx.stroke();
+
+      // Sweep line
+      rCtx.strokeStyle = '#00ff66';
+      rCtx.lineWidth = 2;
+      rCtx.beginPath();
+      rCtx.moveTo(cx, cy);
+      rCtx.lineTo(cx + r * Math.cos(angle), cy + r * Math.sin(angle));
+      rCtx.stroke();
+
+      // Blip
+      rCtx.fillStyle = '#ff3344';
+      rCtx.beginPath();
+      rCtx.arc(cx + 32, cy - 25, 3, 0, Math.PI * 2);
+      rCtx.fill();
+
+      angle += 0.04;
+      requestAnimationFrame(drawRadar);
+    }
+    drawRadar();
+
+    // --- Waveform Frequency Canvas ---
+    const wCanvas = document.getElementById('wave-canvas');
+    const wCtx = wCanvas.getContext('2d');
+    function resizeWave() {
+      wCanvas.width = wCanvas.parentElement.clientWidth;
+      wCanvas.height = wCanvas.parentElement.clientHeight;
+    }
+    resizeWave();
+    window.addEventListener('resize', resizeWave);
+
+    let waveOffset = 0;
+    function drawWave() {
+      const w = wCanvas.width;
+      const h = wCanvas.height;
+      wCtx.clearRect(0, 0, w, h);
+
+      wCtx.strokeStyle = 'rgba(0, 229, 255, 0.7)';
+      wCtx.lineWidth = 1.5;
+      wCtx.beginPath();
+
+      for (let x = 0; x < w; x++) {
+        const y = h / 2 + Math.sin((x + waveOffset) * 0.04) * 20 * Math.sin((x) * 0.01) + (Math.random() - 0.5) * 6;
+        if (x === 0) wCtx.moveTo(x, y);
+        else wCtx.lineTo(x, y);
+      }
+      wCtx.stroke();
+
+      waveOffset += 3;
+      requestAnimationFrame(drawWave);
+    }
+    drawWave();
+
+    // --- Bottom Audit Log Stream ---
+    const auditLogs = document.getElementById('audit-logs');
+    const sampleLogs = [
+      "SYN_ACK response received from router gateway 10.0.0.1",
+      "Overriding watchdog timer (timeout=0ms)",
+      "Neural handshake established with sub-cluster delta-9",
+      "Bypassing SHA-512 authentication round (attempt 4)",
+      "Payload fragmented into 142 micro-packets",
+      "Warning: Buffer overrun prevented at address 0x00FFED4",
+      "Port 443 / SSL interception certificate spoofed",
+      "Heartbeat ping ack [RTT: 2.1ms]",
+      "Target memory mapped with read/write/execute permissions"
+    ];
+
+    function addAuditLog() {
+      const msg = sampleLogs[Math.floor(Math.random() * sampleLogs.length)];
+      const time = new Date().toTimeString().split(' ')[0];
+      const div = document.createElement('div');
+      div.innerText = `[${time}] ${msg}`;
+      auditLogs.appendChild(div);
+      if (auditLogs.children.length > 8) {
+        auditLogs.removeChild(auditLogs.firstChild);
+      }
+    }
+    setInterval(addAuditLog, 650);
+
+    // Random telemetry updates
+    setInterval(() => {
+      document.getElementById('stat-entropy').innerText = (98 + Math.random() * 1.9).toFixed(2) + '%';
+      document.getElementById('stat-packets').innerText = (4.5 + Math.random() * 0.8).toFixed(2) + ' GB/s';
+    }, 1200);
+
+  </script>
+</body>
+</html>

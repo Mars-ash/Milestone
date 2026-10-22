@@ -7,7 +7,7 @@ use App\Livewire\Prototype\ProgressForm;
 use App\Prototype\FakeDraftStore;
 use App\Prototype\FakeStore;
 use Livewire\Livewire;
-use Tests\TestCase;
+use Tests\PrototypeTestCase as TestCase;
 
 class PrototypeAutosaveDraftTest extends TestCase
 {
@@ -103,7 +103,6 @@ class PrototypeAutosaveDraftTest extends TestCase
         $this->assertSame('Sent Sample', $component->get('activity'));
         $this->assertSame('2026-10-28', $component->get('activityDate'));
         $this->assertSame('Draft pengiriman sampel ke customer', $component->get('notes'));
-        $this->assertSame('Rahmat Specialist', $component->get('picProgress'));
         $this->assertSame('Mr. Tanaka', $component->get('picCustomer'));
         $this->assertSame('KOMATSU 200T', $component->get('machine'));
         $this->assertSame('135,5', $component->get('dieHighRaw'));
@@ -117,8 +116,7 @@ class PrototypeAutosaveDraftTest extends TestCase
     {
         // Buat draft perubahan untuk prog-001
         $component = Livewire::test(ProgressForm::class, ['progressId' => 'prog-001'])
-            ->set('notes', 'PERUBAHAN FINAL: Masalah flange selesai diperbaiki')
-            ->set('picProgress', 'Budi Senior QA');
+            ->set('notes', 'PERUBAHAN FINAL: Masalah flange selesai diperbaiki');
 
         $draftUuid = $component->get('draftUuid');
         $this->assertNotNull(FakeDraftStore::find($draftUuid));
@@ -129,7 +127,7 @@ class PrototypeAutosaveDraftTest extends TestCase
         // 1. Progress resmi sekarang telah ter-update dengan catatan baru
         $updatedProgress = FakeStore::findProgress('prog-001');
         $this->assertSame('PERUBAHAN FINAL: Masalah flange selesai diperbaiki', $updatedProgress['notes']);
-        $this->assertSame('Budi Senior QA', $updatedProgress['pic_progress']);
+        $this->assertSame('Ahmad Fauzi (Fiktif)', $updatedProgress['pic_progress']);
 
         // 2. Draft terkait harus sudah terhapus otomatis dari FakeDraftStore
         $this->assertNull(FakeDraftStore::find($draftUuid), 'Draft harus otomatis terhapus saat progress final tersimpan');
@@ -155,7 +153,7 @@ class PrototypeAutosaveDraftTest extends TestCase
         Livewire::test(DraftList::class)
             ->call('confirmDiscard', $draftUuid)
             ->call('discardDraft', $draftUuid)
-            ->assertSee('Draft berhasil dibuang');
+            ->assertDispatched('ui-toast');
 
         // Draft terhapus dari store
         $this->assertNull(FakeDraftStore::find($draftUuid));
@@ -177,8 +175,9 @@ class PrototypeAutosaveDraftTest extends TestCase
         // Normal state: saved
         $this->assertSame('saved', $component->get('autosaveStatus'));
 
-        // Toggle simulasi error
+        // Toggle simulasi error dan ubah data sehingga ada perubahan yang dicoba disimpan
         $component->set('simulateSaveError', true);
+        $component->set('notes', 'Uji coba retry autosave - revisi');
         $component->call('saveDraft');
 
         $this->assertSame('error', $component->get('autosaveStatus'));

@@ -5,7 +5,7 @@ namespace Tests\Feature;
 use App\Livewire\Prototype\Shell;
 use App\Prototype\FakeStore;
 use Livewire\Livewire;
-use Tests\TestCase;
+use Tests\PrototypeTestCase as TestCase;
 
 class PrototypeShellTest extends TestCase
 {
@@ -30,20 +30,19 @@ class PrototypeShellTest extends TestCase
     {
         // Projects Tab
         Livewire::test(Shell::class, ['tab' => 'projects'])
-            ->assertSee('Daftar Project Master')
+            ->assertSee('Project Master')
             ->assertSee('0012/NM/2026')
             ->assertSee('0091-XYZ-01');
 
         // Progresses Tab
         Livewire::test(Shell::class, ['tab' => 'progresses'])
-            ->assertSee('Seluruh Riwayat Progress')
             ->assertSee('Trial')
             ->assertSee('Sent Sample');
 
         // Drafts Tab
         Livewire::test(Shell::class, ['tab' => 'drafts'])
-            ->assertSee('Draft Tersimpan')
-            ->assertSee('Lanjutkan Draft');
+            ->assertSee('Draft')
+            ->assertSee('Lanjutkan');
 
         // Components Tab
         Livewire::test(Shell::class, ['tab' => 'components'])

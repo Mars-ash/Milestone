@@ -48,15 +48,15 @@ Baca PRD_Progress_New_Model.md: Bagian 9, 12, 14, 16, 17; FR07 sampai FR11 dan F
 
 ## Daftar task
 
-- [ ] P04-T01 Implementasikan editor problem dan identitas baris stabil
-- [ ] P04-T02 Implementasikan beberapa corrective action per problem
-- [ ] P04-T03 Implementasikan Next Action independen
-- [ ] P04-T04 Implementasikan riwayat feedback customer
-- [ ] P04-T05 Tetapkan konfigurasi upload dan staging privat
-- [ ] P04-T06 Implementasikan galeri foto per problem
-- [ ] P04-T07 Implementasikan dokumen baru dan arsip metadata lama
-- [ ] P04-T08 Finalisasi Simpan graph dalam satu transaksi
-- [ ] P04-T09 Review relasi dan UX daftar panjang
+- [x] P04-T01 Implementasikan editor problem dan identitas baris stabil
+- [x] P04-T02 Implementasikan beberapa corrective action per problem
+- [x] P04-T03 Implementasikan Next Action independen
+- [x] P04-T04 Implementasikan riwayat feedback customer
+- [x] P04-T05 Tetapkan konfigurasi upload dan staging privat
+- [x] P04-T06 Implementasikan galeri foto per problem
+- [x] P04-T07 Implementasikan dokumen baru dan arsip metadata lama
+- [x] P04-T08 Finalisasi Simpan graph dalam satu transaksi
+- [x] P04-T09 Review relasi dan UX daftar panjang
 
 ### P04-T01 Implementasikan editor problem dan identitas baris stabil
 

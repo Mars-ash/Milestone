@@ -1,0 +1,15 @@
+# Keputusan implementasi Fase 2 — 15 Oktober 2026
+
+1. Instruksi pengguna terbaru menjadi acuan: UI yang ada adalah UI final aplikasi; tidak ada desain prototype baru. Namespace lama dipertahankan sebagai lokasi source, bukan alasan membuat UI baru.
+2. PIC Progress di PRD bagian 16 dan fixture lama bertentangan dengan keputusan terbaru. Kolom/DTO/state form operasional PIC Progress tidak dibuat. Sisa fixture preview tetap arsip fiktif untuk regresi; nilainya tidak masuk schema operasional. PRD tidak diedit.
+3. Spec dipertahankan di database sesuai pemetaan sumber, tanpa input Spec pada Project. Model merupakan teks kode, bukan gambar/avatar.
+4. Catatan penerimaan lama menyebut mengganti adapter pada Fase 2. Task terperinci Fase 2 dan instruksi terbaru membatasi pekerjaan fondasi serta kontrak; integrasi UI CRUD tetap Fase 3, nested/file Fase 4, autosave/final graph Fase 5. Jalur operasional tidak memakai dummy. Kontrak yang belum diisi menolak eksplisit, tidak berpura-pura sukses.
+5. PHP minimum diperbaiki dari `^8.3` menjadi `^8.4.1`, mengikuti kebutuhan lockfile yang sudah ada. Tidak ada perubahan versi paket Composer; hanya hash/platform requirement lock yang diselaraskan. Node memakai satu package manager npm. Playwright ditambahkan sebagai dependency development terkunci 1.62.1.
+6. PostgreSQL 18, bukan SQLite, menjadi quality gate. Schema memakai CHECK PostgreSQL/partial unique/JSONB; test menolak database yang tidak bernama progress_new_model_test. Environment uji tidak memakai database pengguna atau produksi.
+7. FK RESTRICT dipilih agar parent tidak terhapus dan membuat orphan. Tidak ada fitur UI cascade delete. Owner attachment memakai XOR FK + validasi service terhadap draft/client row; metadata dokumen legacy terpisah dari file aktif.
+8. Satu admin ditegakkan database dengan boolean slot true+unique, tanpa role tambahan. Command lokal meminta secret; tidak ada seeder akun/registrasi publik. Pemulihan akun sebelum live masih keputusan pemilik aplikasi, bukan endpoint reset publik yang diasumsikan.
+9. Close/Reopen foundation action sudah atomik dan revision-aware, tetapi belum diwiring ke UI database. Implementasi kecil ini menjadi bukti kontrak transaksi Fase 2; monitoring/autosave/graph final tetap skeleton fase berikutnya.
+10. OP01–OP05 tetap terbuka sesuai waktu kebutuhannya. OP03 tidak diganti asumsi batas ukuran preview (2 MB). Tidak ada upload operasional yang dinyalakan sebelum konfigurasinya ditetapkan.
+11. Bukti lama “100% paritas” tidak dipakai sebagai hasil test sesi ini. Koreksi R01–R04 ditemukan sudah ada pada source upload. R01/R02 diuji ulang melalui PHP/Livewire. R03/R04 sudah ada guard kode dan regresi server yang relevan; browser offline/network race dan paritas visual terbaru belum terverifikasi jika browser terhalang environment.
+
+12. Instalasi dist lockfile mengalami HTTP 404, sehingga dependency segar dipasang dari revisi Git yang sama. Source paket Pint dan Flysystem memuat class yang bertumpuk; exclude-from-classmap membatasi path tersebut tanpa mengedit vendor atau versi dependency. Bootstrap dan test dijalankan pada vendor standar hasil instalasi segar.

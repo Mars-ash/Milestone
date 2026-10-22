@@ -245,10 +245,10 @@ class FakeStoreTest extends TestCase
 
     public function test_pic_multi_role_search_returns_unique_progress_records(): void
     {
-        // 1. Search PIC in 'progress' role
-        $resultsProg = FakeStore::getProgresses(['status' => 'all', 'pic' => 'Ahmad Fauzi', 'pic_role' => 'progress']);
+        // 1. Search PIC in 'customer' role
+        $resultsProg = FakeStore::getProgresses(['status' => 'all', 'pic' => 'Bambang Customer', 'pic_role' => 'customer']);
         $this->assertCount(1, $resultsProg);
-        $this->assertSame('prog-001', $resultsProg[0]['id']);
+        $this->assertSame('prog-003', $resultsProg[0]['id']);
 
         // 2. Search PIC in 'corrective_action' role on complex progress with 2 problems x 2 actions
         $resultsAct = FakeStore::getProgresses(['status' => 'all', 'pic' => 'Budi Santoso', 'pic_role' => 'corrective_action']);

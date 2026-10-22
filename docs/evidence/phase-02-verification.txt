@@ -1,0 +1,187 @@
+Verifikasi Fase 2 — 15 Oktober 2026
+
+Runtime: PHP 8.4.26; PostgreSQL 18.6; Composer 2.10.3; Node 24.19.0; npm 11.9.0.
+Database: progress_new_model_test; role/cluster uji terisolasi; tidak ada data produksi.
+
+
+$ php artisan test (setelah koreksi policy file, CSRF, dan auth Livewire message)
+{"tool":"phpunit","result":"passed","tests":116,"passed":116,"assertions":708,"duration_ms":10929}
+
+
+$ php artisan migrate:rollback --force (database testing)
+
+   INFO  Rolling back migrations.  
+
+  2026_10_15_000004_enforce_single_admin ........................ 66.93ms DONE
+  2026_10_15_000003_create_drafts_attachments_and_legacy_metadata  29.25ms DONE
+  2026_10_15_000002_create_progress_children_tables ............. 17.86ms DONE
+  2026_10_15_000001_create_projects_and_progresses .............. 12.74ms DONE
+  0001_01_01_000002_create_jobs_table ........................... 12.30ms DONE
+  0001_01_01_000001_create_cache_table ........................... 5.26ms DONE
+  0001_01_01_000000_create_users_table ........................... 8.27ms DONE
+
+
+
+$ php artisan migrate --force (database testing)
+
+   INFO  Running migrations.  
+
+  0001_01_01_000000_create_users_table .......................... 41.32ms DONE
+  0001_01_01_000001_create_cache_table .......................... 14.06ms DONE
+  0001_01_01_000002_create_jobs_table ........................... 28.37ms DONE
+  2026_10_15_000001_create_projects_and_progresses .............. 69.27ms DONE
+  2026_10_15_000002_create_progress_children_tables ............. 88.96ms DONE
+  2026_10_15_000003_create_drafts_attachments_and_legacy_metadata  57.54ms DONE
+  2026_10_15_000004_enforce_single_admin ......................... 3.49ms DONE
+
+
+
+$ PostgreSQL SELECT version()
+                                                               version                                                               
+-------------------------------------------------------------------------------------------------------------------------------------
+ PostgreSQL 18.6 (Ubuntu 18.6-1.pgdg24.04+2) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, 64-bit
+(1 row)
+
+
+
+$ npm ci
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+added 103 packages in 35s
+
+
+$ npm run build
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> build
+> vite build
+
+vite v8.3.4 building client environment for production...
+transforming...
+✓ 4 modules transformed.
+rendering chunks...
+computing gzip size...
+public/build/manifest.json                   0.54 kB │ gzip:  0.20 kB
+public/build/assets/prototype-8rJWXEX9.css  82.15 kB │ gzip: 17.95 kB
+public/build/assets/app-C2Ju4DhD.css        87.74 kB │ gzip: 19.25 kB
+public/build/assets/app-BvRk9kiK.js          0.00 kB │ gzip:  0.02 kB
+
+✓ built in 1.20s
+
+
+$ php artisan view:cache
+
+
+ INFO Blade templates cached successfully. 
+
+
+
+$ composer validate --strict
+Composer plugins have been disabled for safety in this non-interactive session.
+Set COMPOSER_ALLOW_SUPERUSER=1 if you want to allow plugins to run as root/super user.
+Do not run Composer as root/super user! See https://getcomposer.org/root for details
+./composer.json is valid
+
+
+$ composer check-platform-reqs
+Composer plugins have been disabled for safety in this non-interactive session.
+Set COMPOSER_ALLOW_SUPERUSER=1 if you want to allow plugins to run as root/super user.
+Do not run Composer as root/super user! See https://getcomposer.org/root for details
+Checking platform requirements for packages in the vendor dir
+composer-runtime-api 2.2.2      success                                       
+ext-ctype            *          success provided by symfony/polyfill-ctype    
+ext-dom              20031129   success                                       
+ext-fileinfo         8.4.26     success                                       
+ext-filter           8.4.26     success                                       
+ext-hash             8.4.26     success                                       
+ext-iconv            8.4.26     success                                       
+ext-json             8.4.26     success                                       
+ext-libxml           8.4.26     success                                       
+ext-mbstring         *          success provided by symfony/polyfill-mbstring 
+ext-openssl          8.4.26     success                                       
+ext-pcre             8.4.26     success                                       
+ext-phar             8.4.26     success                                       
+ext-session          8.4.26     success                                       
+ext-tokenizer        8.4.26     success                                       
+ext-xml              8.4.26     success                                       
+ext-xmlwriter        8.4.26     success                                       
+php                  8.4.26     success                                       
+
+
+Browser: npm run test:browser, Playwright 1.62.1, Chrome 155.0.8059.79 (diverifikasi 19 Oktober 2026).
+Hasil: 8 passed (1.2m). Seluruh skenario browser lulus:
+  ok 1 tests/Browser/foundation.spec.js: session auth, invalid login, logout, and anonymous data guard (8.8s)
+  ok 2 tests/Browser/foundation.spec.js: existing UI remains usable at 1366px (7.1s)
+  ok 3 tests/Browser/foundation.spec.js: existing UI remains usable at 1024px (7.2s)
+  ok 4 tests/Browser/foundation.spec.js: existing UI remains usable at 911px (8.3s)
+  ok 5 tests/Browser/foundation.spec.js: existing UI remains usable at 768px (7.5s)
+  ok 6 tests/Browser/foundation.spec.js: existing UI remains usable at 390px (7.7s)
+  ok 7 tests/Browser/foundation.spec.js: empty and unchanged editor navigation do not create drafts; confirmed draft recovers (12.2s)
+  ok 8 tests/Browser/foundation.spec.js: project dates can be cleared and Close/Reopen keeps saved data (9.8s)
+
+Clean Composer dist install: failed, HTTP/2 404 for locked source archive (contoh symfony/console v8.1.8). Source fallback passed: 110 installs, no updates/removals. Bootstrap, autoload, platform and 116 tests/708 assertions reverified against freshly installed dependencies.
+
+Review source UI/PRD:
+resources/css/app.css: same content (line endings normalized)
+resources/css/prototype.css: same content (line endings normalized)
+resources/css/reference.css: same content (line endings normalized)
+resources/views/livewire/prototype/progress-form.blade.php: same content (line endings normalized)
+resources/views/livewire/prototype/project-form.blade.php: same content (line endings normalized)
+resources/views/livewire/prototype/shell.blade.php: same content (line endings normalized)
+PRD_Progress_New_Model.md: same content (line endings normalized)
+PHP lint: 86 app/test/database PHP files passed.
+Foundation Pint: passed.
+
+Auth route review: GET /login, POST /login, POST /logout; no /register or public password-reset route. All /app, /prototype and attachment download routes have auth/admin guard.
+Source candidate secret-pattern scan: no matches for private keys/AWS/GitHub/OpenAI credential patterns. Actual env files excluded from source artifact.
+git diff --check: passed.
+
+Embedded Laravel key pattern scan: no matches.
+
+Fresh source dependency verification:
+{"tool":"phpunit","result":"passed","tests":116,"passed":116,"assertions":708,"duration_ms":13843}
+
+Composer plugins have been disabled for safety in this non-interactive session.
+Set COMPOSER_ALLOW_SUPERUSER=1 if you want to allow plugins to run as root/super user.
+Do not run Composer as root/super user! See https://getcomposer.org/root for details
+Generating optimized autoload files
+> Illuminate\Foundation\ComposerScripts::postAutoloadDump
+> @php artisan package:discover --ansi
+
+ INFO Discovering packages. 
+
+ laravel/pail .. DONE
+ laravel/pao .. DONE
+ laravel/tinker .. DONE
+ livewire/livewire .. DONE
+ nesbot/carbon .. DONE
+ nunomaduro/collision .. DONE
+ nunomaduro/termwind .. DONE
+
+Generated optimized autoload files containing 7555 classes
+
+Composer plugins have been disabled for safety in this non-interactive session.
+Set COMPOSER_ALLOW_SUPERUSER=1 if you want to allow plugins to run as root/super user.
+Do not run Composer as root/super user! See https://getcomposer.org/root for details
+Checking platform requirements for packages in the vendor dir
+composer-runtime-api 2.2.2      success                                       
+ext-ctype            *          success provided by symfony/polyfill-ctype    
+ext-dom              20031129   success                                       
+ext-fileinfo         8.4.26     success                                       
+ext-filter           8.4.26     success                                       
+ext-hash             8.4.26     success                                       
+ext-iconv            8.4.26     success                                       
+ext-json             8.4.26     success                                       
+ext-libxml           8.4.26     success                                       
+ext-mbstring         *          success provided by symfony/polyfill-mbstring 
+ext-openssl          8.4.26     success                                       
+ext-pcre             8.4.26     success                                       
+ext-phar             8.4.26     success                                       
+ext-session          8.4.26     success                                       
+ext-tokenizer        8.4.26     success                                       
+ext-xml              8.4.26     success                                       
+ext-xmlwriter        8.4.26     success                                       
+php                  8.4.26     success                                       
+
+Pint against freshly installed toolchain:
+{"tool":"pint","result":"passed"}

@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
+use Tests\PrototypeTestCase as TestCase;
 
 class PrototypeRouteTest extends TestCase
 {
@@ -26,7 +26,7 @@ class PrototypeRouteTest extends TestCase
         config(['prototype.enabled' => true]);
 
         $response = $this->get('/');
-        $response->assertRedirect(route('prototype.index'));
+        $response->assertRedirect(route('app'));
     }
 
     public function test_prototype_route_aborts_404_when_prototype_is_disabled(): void
@@ -51,7 +51,6 @@ class PrototypeRouteTest extends TestCase
         config(['prototype.enabled' => false]);
 
         $response = $this->get('/');
-        $response->assertStatus(200);
-        $response->assertViewIs('welcome');
+        $response->assertRedirect(route('app'));
     }
 }

@@ -6,7 +6,7 @@ use App\Livewire\Prototype\ProjectDetail;
 use App\Livewire\Prototype\ProjectForm;
 use App\Prototype\FakeStore;
 use Livewire\Livewire;
-use Tests\TestCase;
+use Tests\PrototypeTestCase as TestCase;
 
 class PrototypeProjectTest extends TestCase
 {

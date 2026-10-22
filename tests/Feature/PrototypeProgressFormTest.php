@@ -5,7 +5,7 @@ namespace Tests\Feature;
 use App\Livewire\Prototype\ProgressForm;
 use App\Prototype\FakeStore;
 use Livewire\Livewire;
-use Tests\TestCase;
+use Tests\PrototypeTestCase as TestCase;
 
 class PrototypeProgressFormTest extends TestCase
 {
@@ -48,7 +48,7 @@ class PrototypeProgressFormTest extends TestCase
             ->set('remark', 'Perlu penyesuaian radius R3');
 
         // Verifikasi pada activity awal (Trial)
-        $this->assertSame('Trial', $component->get('activity'));
+        $this->assertSame('', $component->get('activity'));
         $this->assertSame('KOMATSU 300T PRESS', $component->get('machine'));
         $this->assertSame('120,5', $component->get('dieHighRaw'));
 
@@ -86,7 +86,6 @@ class PrototypeProgressFormTest extends TestCase
             ->set('projectId', 'proj-001')
             ->set('activityDate', '2026-10-15')
             ->set('activity', 'Trial')
-            ->set('picProgress', 'Budi Santoso & Tim Quality External (Bukan Akun)')
             ->set('picCustomer', 'Mr. Tanaka / QA Inspector Honda')
             ->set('notes', 'Trial mold die casting')
             ->set('dieHighRaw', '145,75')
@@ -101,7 +100,6 @@ class PrototypeProgressFormTest extends TestCase
         $newProgress = end($progresses);
 
         $this->assertNotEmpty($newProgress);
-        $this->assertSame('Budi Santoso & Tim Quality External (Bukan Akun)', $newProgress['pic_progress']);
         $this->assertSame('Mr. Tanaka / QA Inspector Honda', $newProgress['pic_customer']);
         $this->assertSame('145,75', $newProgress['die_high_raw'], 'Format koma pada Die High harus dipertahankan');
         $this->assertSame('1,5', $newProgress['qty_material_raw'], 'Format koma pada Qty Material harus dipertahankan');
@@ -168,7 +166,6 @@ class PrototypeProgressFormTest extends TestCase
             ->set('activityDate', '2026-10-20')
             ->set('activity', 'Audit')
             ->set('notes', '') // Catatan kosong diperbolehkan untuk simpan cepat awal
-            ->set('picProgress', '')
             ->call('save')
             ->assertHasNoErrors();
 

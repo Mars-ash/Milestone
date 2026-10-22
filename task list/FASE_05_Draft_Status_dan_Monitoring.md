@@ -48,16 +48,16 @@ Baca PRD_Progress_New_Model.md: Bagian 4, 7, 10, 11, 17; FR12 sampai FR18.
 
 ## Daftar task
 
-- [ ] P05-T01 Implementasikan penyimpanan draft parsial
-- [ ] P05-T02 Hubungkan autosave dengan state UI dan pemulihan
-- [ ] P05-T03 Lindungi urutan autosave dan konflik dua tab
-- [ ] P05-T04 Integrasikan Simpan final dan idempotensi draft
-- [ ] P05-T05 Selesaikan draft file dan Buang Draft
-- [ ] P05-T06 Implementasikan Close Reopen dan draft belum diterapkan
-- [ ] P05-T07 Implementasikan tiga ringkasan dashboard
-- [ ] P05-T08 Implementasikan daftar kerja filter PIC dan pagination
-- [ ] P05-T09 Uji alur browser kegagalan dan aksesibilitas
-- [ ] P05-T10 Review kesiapan aplikasi untuk migrasi
+- [x] P05-T01 Implementasikan penyimpanan draft parsial
+- [x] P05-T02 Hubungkan autosave dengan state UI dan pemulihan
+- [x] P05-T03 Lindungi urutan autosave dan konflik dua tab
+- [x] P05-T04 Integrasikan Simpan final dan idempotensi draft
+- [x] P05-T05 Selesaikan draft file dan Buang Draft
+- [x] P05-T06 Implementasikan Close Reopen dan draft belum diterapkan
+- [x] P05-T07 Implementasikan tiga ringkasan dashboard
+- [x] P05-T08 Implementasikan daftar kerja filter PIC dan pagination
+- [x] P05-T09 Uji alur browser kegagalan dan aksesibilitas
+- [x] P05-T10 Review kesiapan aplikasi untuk migrasi
 
 ### P05-T01 Implementasikan penyimpanan draft parsial
 

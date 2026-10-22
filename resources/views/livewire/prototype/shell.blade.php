@@ -1,70 +1,94 @@
+@php
+    $activeNav = match($activeTab) {
+        'projects' => 'project',
+        'progresses', 'form' => 'progress',
+        'drafts' => 'draft',
+        default => 'dashboard',
+    };
+
+    $label = match($activeTab) {
+        'projects' => 'Project',
+        'progresses', 'form' => 'Progress',
+        'drafts' => 'Draft',
+        'components' => 'Pustaka Komponen UI',
+        default => 'Dashboard',
+    };
+
+    $isEditor = ($activeTab === 'form');
+    $draftCount = count($drafts ?? []);
+@endphp
+
 <div>
-    <!-- Slot Header Actions: Reset Button -->
-    <x-slot:headerActions>
-        <x-ui.button
-            wire:click="resetData"
-            variant="secondary"
-            size="sm"
-            class="text-xs text-[#8A5B00] border-[#F8DDA4] hover:bg-[#FEF7E6]"
-            title="Reset data ke fixture fiktif awal"
-        >
-            <svg class="w-3.5 h-3.5 mr-1 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-            </svg>
-            Reset Fixture
-        </x-ui.button>
-    </x-slot:headerActions>
+    <button class="scrim" @click="mobileMenu = false" aria-label="Tutup navigasi"></button>
+    <aside class="sidebar" aria-label="Navigasi utama">
+        <a class="brand" href="{{ route('prototype.index', ['tab' => 'dashboard']) }}" @click="mobileMenu = false">
+            <span>
+                <span class="brand-name">New Model</span>
+                <span class="brand-sub" style="display:block">PROGRESS TRACKER</span>
+            </span>
+        </a>
+        <div class="nav-label">WORKSPACE</div>
+        <nav class="nav">
+            <a href="{{ route('prototype.index', ['tab' => 'dashboard']) }}"
+                class="nav-item {{ $activeNav === 'dashboard' ? 'active' : '' }}"
+                @if($activeNav === 'dashboard') aria-current="page" @endif
+                @click="mobileMenu = false">
+                <x-ui.icon name="dashboard" /><span>Dashboard</span>
+            </a>
+            <a href="{{ route('prototype.index', ['tab' => 'projects']) }}"
+                class="nav-item {{ $activeNav === 'project' ? 'active' : '' }}"
+                @if($activeNav === 'project') aria-current="page" @endif
+                @click="mobileMenu = false">
+                <x-ui.icon name="project" /><span>Project</span>
+            </a>
+            <a href="{{ route('prototype.index', ['tab' => 'progresses']) }}"
+                class="nav-item {{ $activeNav === 'progress' ? 'active' : '' }}"
+                @if($activeNav === 'progress') aria-current="page" @endif
+                @click="mobileMenu = false">
+                <x-ui.icon name="progress" /><span>Progress</span>
+            </a>
+            <a href="{{ route('prototype.index', ['tab' => 'drafts']) }}"
+                class="nav-item {{ $activeNav === 'draft' ? 'active' : '' }}"
+                @if($activeNav === 'draft') aria-current="page" @endif
+                @click="mobileMenu = false">
+                <x-ui.icon name="draft" /><span>Draft</span>
+                <span class="nav-count">{{ $draftCount }}</span>
+            </a>
+        </nav>
+    </aside>
 
-    <!-- Notifikasi Flash -->
-    @if($flashMessage)
-        <div class="mb-5 p-3.5 rounded-md bg-[#EAF7EE] border border-[#B6E6C3] text-[#0E6B38] text-xs font-medium flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                </svg>
-                <span>{{ $flashMessage }}</span>
+    <div class="workspace">
+        <header class="topbar">
+            <div class="breadcrumb">
+                <button
+                    type="button"
+                    class="icon-btn mobile-menu"
+                    aria-label="Buka navigasi"
+                    :aria-expanded="mobileMenu"
+                    @click="mobileMenu = !mobileMenu"
+                >
+                    <x-ui.icon name="menu" />
+                </button>
+                <span>Workspace</span>
+                <span class="slash">/</span>
+                <strong>{{ $label }}</strong>
             </div>
-            <button wire:click="dismissFlash" class="text-[#0E6B38] hover:opacity-75 text-sm font-bold">&times;</button>
-        </div>
-    @endif
-
-    <!-- Ringkasan Global Shell untuk Tab Non-Dashboard -->
-    @if($activeTab !== 'dashboard')
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
-            <div class="bg-white p-4 rounded-lg border border-[#D8DEE6] shadow-2xs">
-                <div class="text-xs font-medium text-[#536170]">Total Project Master</div>
-                <div class="text-2xl font-bold text-[#18212B] mt-1">{{ $stats['total_projects'] ?? 0 }}</div>
-                <div class="text-[11px] text-[#536170] mt-0.5">Pasangan unik JO & Part No</div>
+            <div class="topbar-right">
+                <span class="topbar-date">{{ now('Asia/Jakarta')->locale('id')->isoFormat('MMMM YYYY') }}</span>
             </div>
+        </header>
 
-            <div class="bg-white p-4 rounded-lg border border-[#D8DEE6] shadow-2xs">
-                <div class="text-xs font-medium text-[#0E6B38] flex items-center gap-1.5">
-                    <span class="w-2 h-2 rounded-full bg-[#0E6B38]"></span>
-                    Progress Open
+        <main id="main" class="main {{ $isEditor ? 'editor-main' : '' }}" tabindex="-1">
+            <!-- Notifikasi Flash -->
+            @if($flashMessage)
+                <div class="mb-5 p-3.5 rounded-md bg-[#EAF7EE] border border-[#B6E6C3] text-[#0E6B38] text-xs font-medium flex items-center justify-between" role="status">
+                    <div class="flex items-center gap-2">
+                        <x-ui.icon name="check" class="w-4 h-4 text-[#0E6B38]" />
+                        <span>{{ $flashMessage }}</span>
+                    </div>
+                    <button wire:click="dismissFlash" class="text-[#0E6B38] hover:opacity-75 text-sm font-bold">&times;</button>
                 </div>
-                <div class="text-2xl font-bold text-[#0E6B38] mt-1">{{ $stats['open_count'] ?? 0 }}</div>
-                <div class="text-[11px] text-[#536170] mt-0.5">Memerlukan tindak lanjut</div>
-            </div>
-
-            <div class="bg-white p-4 rounded-lg border border-[#D8DEE6] shadow-2xs">
-                <div class="text-xs font-medium text-[#536170] flex items-center gap-1.5">
-                    <span class="w-2 h-2 rounded-full bg-[#8C9BAE]"></span>
-                    Progress Closed
-                </div>
-                <div class="text-2xl font-bold text-[#18212B] mt-1">{{ $stats['closed_count'] ?? 0 }}</div>
-                <div class="text-[11px] text-[#536170] mt-0.5">Ditutup manual oleh admin</div>
-            </div>
-
-            <div class="bg-white p-4 rounded-lg border border-[#D8DEE6] shadow-2xs">
-                <div class="text-xs font-medium text-[#8A5B00] flex items-center gap-1.5">
-                    <span class="w-2 h-2 rounded-full bg-[#8A5B00]"></span>
-                    Draft Tersimpan
-                </div>
-                <div class="text-2xl font-bold text-[#8A5B00] mt-1">{{ $stats['draft_count'] ?? 0 }}</div>
-                <div class="text-[11px] text-[#536170] mt-0.5">Isian kerja belum final (D11)</div>
-            </div>
-        </div>
-    @endif
+            @endif
 
     <!-- Tampilan Tab Berdasarkan State ($activeTab) -->
 
@@ -74,224 +98,85 @@
 
     @elseif($activeTab === 'projects')
         <!-- TAB: PROJECT MASTER (P01-T05) -->
-        @if(request()->query('action') === 'new')
-            <!-- Mode Tambah Project Baru -->
-            <livewire:prototype.project-form />
-        @elseif(request()->query('edit'))
-            <!-- Mode Edit Project -->
-            <livewire:prototype.project-form :projectId="request()->query('edit')" />
-        @elseif(request()->query('detail'))
+        @if(request()->query('detail'))
             <!-- Mode Detail Project -->
             <livewire:prototype.project-detail :projectId="request()->query('detail')" />
         @else
             <!-- Mode Daftar Project Master -->
-            <div class="bg-white rounded-lg border border-[#D8DEE6] overflow-hidden shadow-2xs">
-                <div class="px-5 py-4 border-b border-[#D8DEE6] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <div>
-                        <h2 class="text-base font-bold text-[#18212B]">Daftar Project Master</h2>
-                        <p class="text-xs text-[#536170] mt-0.5">Satu JO No untuk satu Part No dan sebaliknya. Keduanya wajib unik (D01).</p>
-                    </div>
-                    <a
-                        href="?tab=projects&action=new"
-                        class="inline-flex items-center justify-center px-4 py-2 text-xs font-semibold rounded-md bg-[#2459A6] text-white hover:bg-[#1D4785] transition-colors shadow-2xs min-h-[44px] sm:min-h-0"
-                        data-testid="add-project-btn"
-                    >
-                        <svg class="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                        </svg>
-                        Tambah Project
-                    </a>
+            <div class="page-head">
+                <div>
+                    <h1>Project Master</h1>
                 </div>
-
-                <!-- Table Desktop (>= 768px) -->
-                <div class="hidden sm:block overflow-x-auto">
-                    <table class="w-full text-left border-collapse text-xs sm:text-sm text-[#18212B]" data-testid="project-table">
-                        <thead class="bg-[#F5F6F8] border-b border-[#D8DEE6] text-xs font-semibold text-[#536170] uppercase">
-                            <tr>
-                                <th class="px-4 py-3 w-36">JO No</th>
-                                <th class="px-4 py-3 w-36">Part No</th>
-                                <th class="px-4 py-3">Part Name</th>
-                                <th class="px-4 py-3">Customer</th>
-                                <th class="px-4 py-3">Model</th>
-                                <th class="px-4 py-3 w-32">T0 Target / Act</th>
-                                <th class="px-4 py-3 w-36 text-center">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-[#D8DEE6] bg-white">
-                            @foreach($projects as $p)
-                                <tr class="hover:bg-[#F9FAFC] transition-colors" data-testid="project-row" data-id="{{ $p['id'] }}">
-                                    <td class="px-4 py-3 font-bold text-[#2459A6] whitespace-nowrap">{{ $p['jo_no'] }}</td>
-                                    <td class="px-4 py-3 font-mono text-xs text-[#536170] whitespace-nowrap">{{ $p['part_no'] }}</td>
-                                    <td class="px-4 py-3 font-medium text-[#18212B]">{{ $p['part_name'] }}</td>
-                                    <td class="px-4 py-3 text-[#536170]">{{ $p['customer'] ?: '-' }}</td>
-                                    <td class="px-4 py-3 text-xs text-[#536170]">{{ $p['model'] ?: '-' }}</td>
-                                    <td class="px-4 py-3 text-xs whitespace-nowrap">
-                                        <div>Plan: {{ !empty($p['t0_target']) ? \Illuminate\Support\Carbon::parse($p['t0_target'])->format('d M Y') : (!empty($p['t0_target_date']) ? \Illuminate\Support\Carbon::parse($p['t0_target_date'])->format('d M Y') : '-') }}</div>
-                                        <div class="text-[#0E6B38]">Act: {{ !empty($p['t0_actual']) ? \Illuminate\Support\Carbon::parse($p['t0_actual'])->format('d M Y') : (!empty($p['t0_actual_date']) ? \Illuminate\Support\Carbon::parse($p['t0_actual_date'])->format('d M Y') : '-') }}</div>
-                                    </td>
-                                    <td class="px-4 py-3 text-center whitespace-nowrap">
-                                        <div class="inline-flex items-center gap-1.5">
-                                            <a
-                                                href="?tab=projects&detail={{ $p['id'] }}"
-                                                class="px-2.5 py-1 text-xs font-semibold rounded border border-[#D8DEE6] text-[#2459A6] hover:bg-[#F0F4FA]"
-                                            >
-                                                Detail
-                                            </a>
-                                            <a
-                                                href="?tab=projects&edit={{ $p['id'] }}"
-                                                class="px-2.5 py-1 text-xs font-semibold rounded border border-[#D8DEE6] text-[#536170] hover:bg-[#F5F6F8]"
-                                            >
-                                                Edit
-                                            </a>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Mobile Card Summary (< 768px / 390px) -->
-                <div class="block sm:hidden divide-y divide-[#D8DEE6]">
-                    @foreach($projects as $p)
-                        <div class="p-4 bg-white space-y-2">
-                            <div class="flex items-center justify-between">
-                                <span class="font-bold text-sm text-[#2459A6]">{{ $p['jo_no'] }}</span>
-                                <span class="text-xs font-mono text-[#536170]">{{ $p['part_no'] }}</span>
-                            </div>
-                            <div class="text-sm font-semibold text-[#18212B]">{{ $p['part_name'] }}</div>
-                            <div class="text-xs text-[#536170]">Customer: {{ $p['customer'] ?: '-' }} &bull; Model: {{ $p['model'] ?: '-' }}</div>
-                            <div class="text-xs text-[#536170] flex justify-between bg-[#F5F6F8] p-2 rounded">
-                                <span>T0 Plan: {{ $p['t0_target'] ?? $p['t0_target_date'] ?? '-' }}</span>
-                                <span class="text-[#0E6B38]">T0 Act: {{ $p['t0_actual'] ?? $p['t0_actual_date'] ?? '-' }}</span>
-                            </div>
-                            <div class="flex items-center justify-end gap-2 pt-1">
-                                <a
-                                    href="?tab=projects&detail={{ $p['id'] }}"
-                                    class="px-3 py-1.5 text-xs font-semibold rounded border border-[#D8DEE6] text-[#2459A6] bg-white min-h-[44px] flex items-center"
-                                >
-                                    Detail
-                                </a>
-                                <a
-                                    href="?tab=projects&edit={{ $p['id'] }}"
-                                    class="px-3 py-1.5 text-xs font-semibold rounded border border-[#D8DEE6] text-[#536170] bg-white min-h-[44px] flex items-center"
-                                >
-                                    Edit
-                                </a>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
+                <a
+                    href="?tab=projects&action=new"
+                    class="btn primary"
+                    data-testid="add-project-btn"
+                >
+                    <x-ui.icon name="plus" />
+                    Tambah project
+                </a>
             </div>
+
+            <section class="panel">
+                <div class="panel-head">
+                    <h2>{{ count($projects) }} project</h2>
+                </div>
+                <table class="data-table project-table" data-testid="project-table">
+                    <thead>
+                        <tr>
+                            <th scope="col" style="width:35%">Project / Part</th>
+                            <th scope="col">Customer</th>
+                            <th scope="col">Model</th>
+                            <th scope="col">T0 Target</th>
+                            <th scope="col">Progress</th>
+                            <th scope="col" style="width:50px"><span class="sr-only">Buka project</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($projects as $p)
+                            @php
+                                $t0Target = !empty($p['t0_target']) ? $p['t0_target'] : (!empty($p['t0_target_date']) ? $p['t0_target_date'] : null);
+                                $t0TargetFormatted = !empty($t0Target) ? \App\Support\UiFormat::date($t0Target) : 'Belum diisi';
+                                $progressCount = count(\App\Prototype\FakeStore::getProgresses(['project_id' => $p['id'], 'status' => 'all']));
+                            @endphp
+                            <tr data-testid="project-row" data-id="{{ $p['id'] }}">
+                                <td class="part-col">
+                                    <a class="row-title" href="?tab=projects&detail={{ $p['id'] }}" data-testid="project-detail-link">{{ $p['part_name'] }}</a>
+                                    <span class="row-sub">{{ $p['part_no'] }} / <span class="jo-code">{{ $p['jo_no'] }}</span></span>
+                                </td>
+                                <td class="project-customer" data-label="Customer">{{ $p['customer'] ?: '—' }}</td>
+                                <td class="project-model" data-label="Model"><span class="model-code">{{ $p['model'] ?: '—' }}</span></td>
+                                <td class="project-target" data-label="T0 Target">{{ $t0TargetFormatted }}</td>
+                                <td class="project-count" data-label="Progress">{{ $progressCount }} kegiatan</td>
+                                <td class="go-col">
+                                    <a href="?tab=projects&detail={{ $p['id'] }}" class="icon-btn" aria-label="Buka project {{ $p['jo_no'] }}">
+                                        <x-ui.icon name="right" />
+                                    </a>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </section>
+
+        @endif
+        @if(request()->query('action') === 'new')
+            <livewire:prototype.project-form />
+        @elseif(request()->query('edit'))
+            <livewire:prototype.project-form :projectId="request()->query('edit')" />
         @endif
 
     @elseif($activeTab === 'form')
         <!-- TAB: INPUT PROGRESS (P01-T06: 1 Form Semua Activity) -->
-        <livewire:prototype.progress-form :projectId="request()->query('project_id')" />
+        <livewire:prototype.progress-form :projectId="request()->query('project_id')" :progressId="request()->query('id')" />
 
     @elseif($activeTab === 'progresses')
         @if(request()->query('detail') || request()->query('id'))
             <!-- Mode Detail Progress (P01-T09: Close & Reopen) -->
             <livewire:prototype.progress-detail :progressId="request()->query('detail') ?? request()->query('id')" />
         @else
-            <!-- TAB: PROGRESS LIST -->
-            <div class="bg-white rounded-lg border border-[#D8DEE6] overflow-hidden shadow-2xs">
-                <div class="px-5 py-4 border-b border-[#D8DEE6] flex items-center justify-between">
-                    <div>
-                        <h2 class="text-base font-bold text-[#18212B]">Seluruh Riwayat Progress</h2>
-                        <p class="text-xs text-[#536170] mt-0.5">Mencakup 5 Activity dan status Open/Closed.</p>
-                    </div>
-                </div>
-
-                <!-- Table Desktop -->
-                <div class="hidden sm:block overflow-x-auto">
-                    <table class="w-full text-left border-collapse text-sm text-[#18212B]">
-                        <thead class="bg-[#F5F6F8] border-b border-[#D8DEE6] text-xs font-semibold text-[#536170] uppercase">
-                            <tr>
-                                <th class="px-4 py-3">JO No / Part</th>
-                                <th class="px-4 py-3">Activity</th>
-                                <th class="px-4 py-3">Tanggal</th>
-                                <th class="px-4 py-3">Uraian Catatan</th>
-                                <th class="px-4 py-3">Detail Temuan</th>
-                                <th class="px-4 py-3">Status</th>
-                                <th class="px-4 py-3 text-center">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-[#D8DEE6]">
-                            @foreach($progresses as $prog)
-                                @php $proj = \App\Prototype\FakeStore::findProject($prog['project_id']); @endphp
-                                <tr class="hover:bg-[#F9FAFC] transition-colors">
-                                    <td class="px-4 py-3 min-h-[44px]">
-                                        <div class="font-bold text-[#2459A6]">{{ $proj['jo_no'] ?? '-' }}</div>
-                                        <div class="text-xs text-[#536170]">{{ $proj['part_name'] ?? '-' }}</div>
-                                    </td>
-                                    <td class="px-4 py-3">
-                                        <x-ui.badge :type="$prog['activity']" :label="$prog['activity']" />
-                                    </td>
-                                    <td class="px-4 py-3 text-xs text-[#536170] whitespace-nowrap">
-                                        {{ $prog['activity_date'] }}
-                                    </td>
-                                    <td class="px-4 py-3 text-xs max-w-xs text-[#18212B]">
-                                        {{ Str::limit($prog['notes'], 120) }}
-                                    </td>
-                                    <td class="px-4 py-3 text-xs">
-                                        <div class="space-y-0.5">
-                                            @if(!empty($prog['problems']))
-                                                <div class="text-[#C0392B] font-medium">{{ count($prog['problems']) }} Problem</div>
-                                            @endif
-                                            @if(!empty($prog['next_actions']))
-                                                <div class="text-[#2459A6]">{{ count($prog['next_actions']) }} Next Action</div>
-                                            @endif
-                                            @if(!empty($prog['feedbacks']))
-                                                <div class="text-[#536170]">{{ count($prog['feedbacks']) }} Feedback</div>
-                                            @endif
-                                        </div>
-                                    </td>
-                                    <td class="px-4 py-3">
-                                        <x-ui.badge :type="$prog['status']" :label="$prog['status']" />
-                                    </td>
-                                    <td class="px-4 py-3 text-center whitespace-nowrap">
-                                        <a
-                                            href="?tab=progresses&detail={{ $prog['id'] }}"
-                                            class="px-3 py-1.5 text-xs font-semibold rounded border border-[#D8DEE6] text-[#2459A6] hover:bg-[#F0F4FA] transition-colors"
-                                        >
-                                            Detail
-                                        </a>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Mobile Card Summary (< 768px / 390px) -->
-                <div class="block sm:hidden divide-y divide-[#D8DEE6]">
-                    @foreach($progresses as $prog)
-                        @php $proj = \App\Prototype\FakeStore::findProject($prog['project_id']); @endphp
-                        <div class="p-4 bg-white space-y-2">
-                            <div class="flex items-center justify-between">
-                                <span class="font-bold text-sm text-[#2459A6]">{{ $proj['jo_no'] ?? '-' }}</span>
-                                <div class="flex items-center gap-1.5">
-                                    <x-ui.badge :type="$prog['activity']" :label="$prog['activity']" />
-                                    <x-ui.badge :type="$prog['status']" :label="$prog['status']" />
-                                </div>
-                            </div>
-                            <div class="text-xs text-[#536170]">{{ $proj['part_name'] ?? '-' }} &bull; {{ $prog['activity_date'] }}</div>
-                            <div class="text-xs text-[#18212B] bg-[#F5F6F8] p-2 rounded">
-                                {{ Str::limit($prog['notes'], 100) }}
-                            </div>
-                            <div class="flex items-center justify-end pt-1">
-                                <a
-                                    href="?tab=progresses&detail={{ $prog['id'] }}"
-                                    class="px-3 py-1.5 text-xs font-semibold rounded border border-[#D8DEE6] text-[#2459A6] min-h-[44px] flex items-center"
-                                >
-                                    Buka Detail &amp; Status
-                                </a>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
+            <!-- TAB: PROGRESS LIST (Semua progress) -->
+            <livewire:prototype.dashboard :isDashboard="false" initialStatus="all" />
         @endif
 
     @elseif($activeTab === 'drafts')
@@ -443,4 +328,7 @@
             </div>
         </div>
     @endif
+        </main>
+    </div>
 </div>
+

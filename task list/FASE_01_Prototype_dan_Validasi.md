@@ -57,9 +57,9 @@ Baca PRD_Progress_New_Model.md: Bagian 2 sampai 12, 21 sampai 23; fokus UI01 sam
 - [x] P01-T07 Prototype daftar bertingkat dan galeri
 - [x] P01-T08 Prototype autosave draft dan Simpan
 - [x] P01-T09 Prototype detail Close dan Reopen
-- [ ] P01-T10 Periksa visual dan aksesibilitas prototype
-- [ ] P01-T11 Lakukan review pengguna dengan skenario nyata
-- [ ] P01-T12 Revisi prototype dan tetapkan hasil penerimaan
+- [x] P01-T10 Periksa visual dan aksesibilitas prototype
+- [x] P01-T11 Lakukan review pengguna dengan skenario nyata
+- [x] P01-T12 Revisi prototype dan tetapkan hasil penerimaan
 
 ### P01-T01 Bootstrap workspace prototype dengan versi konsisten
 

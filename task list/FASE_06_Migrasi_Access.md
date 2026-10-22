@@ -48,15 +48,15 @@ Baca PRD_Progress_New_Model.md: Bagian 15 sampai 19; FR21 sampai FR25.
 
 ## Daftar task
 
-- [ ] P06-T01 Inventarisasi salinan Access dan lindungi sumber
-- [ ] P06-T02 Definisikan dan hasilkan ekspor data serta manifest
-- [ ] P06-T03 Ekstrak dan validasi foto dari field Access
-- [ ] P06-T04 Bangun staging serta importer master dan progress
-- [ ] P06-T05 Impor anak foto dan metadata dokumen lama
-- [ ] P06-T06 Selesaikan exception dan pemetaan nilai sumber
-- [ ] P06-T07 Uji idempotensi sumber berubah dan pemulihan
-- [ ] P06-T08 Dry run lengkap dan rekonsiliasi dengan pengguna
-- [ ] P06-T09 Siapkan rencana cutover dan handoff
+- [x] P06-T01 Inventarisasi salinan Access dan lindungi sumber
+- [x] P06-T02 Definisikan dan hasilkan ekspor data serta manifest
+- [x] P06-T03 Ekstrak dan validasi foto dari field Access
+- [x] P06-T04 Bangun staging serta importer master dan progress
+- [x] P06-T05 Impor anak foto dan metadata dokumen lama
+- [x] P06-T06 Selesaikan exception dan pemetaan nilai sumber
+- [x] P06-T07 Uji idempotensi sumber berubah dan pemulihan
+- [x] P06-T08 Dry run lengkap dan rekonsiliasi dengan pengguna
+- [x] P06-T09 Siapkan rencana cutover dan handoff
 
 ### P06-T01 Inventarisasi salinan Access dan lindungi sumber
 

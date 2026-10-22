@@ -1,152 +1,96 @@
 @props([
-    'problemId',
+    'problemClientId',
     'problemIndex',
     'photos' => [],
+    'isClosed' => false,
 ])
 
-<div class="mt-4 pt-3 border-t border-[#E8ECF0] space-y-3" x-data="{ activeLightbox: null }">
-    <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
-            <span class="text-xs font-bold uppercase tracking-wider text-[#536170]">
-                Lampiran Foto Temuan (D09, D12, D19)
-            </span>
-            <span class="text-[11px] text-[#536170] bg-[#F5F6F8] px-2 py-0.5 rounded border border-[#D8DEE6]">
-                {{ count($photos) }} Foto
-            </span>
-        </div>
-        <div class="flex items-center gap-2">
-            <button
-                type="button"
-                wire:click="addSimulationPhoto('{{ $problemId }}')"
-                class="px-2.5 py-1 text-xs font-semibold rounded border border-[#D8DEE6] bg-white text-[#536170] hover:bg-[#F0F4FA] hover:text-[#2459A6] transition-colors flex items-center gap-1 min-h-[36px]"
-                data-testid="add-photo-btn-{{ $problemId }}"
-            >
-                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                </svg>
-                + Tambah Foto Simulasi
-            </button>
-        </div>
+<div class="photo-gallery-container" style="margin-top: 12px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+        <span style="font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">
+            Lampiran Foto Temuan
+        </span>
+        <span style="font-size: 11px; color: #64748b; background: #f1f5f9; padding: 2px 8px; border-radius: 4px;">
+            {{ count($photos) }} Foto
+        </span>
     </div>
 
-    @if(empty($photos))
-        <div class="p-3 bg-[#F9FAFC] rounded border border-dashed border-[#D8DEE6] text-center text-xs text-[#536170]">
-            Belum ada foto dilampirkan pada temuan ini. Klik "+ Tambah Foto Simulasi" untuk mengunggah bukti visual.
-        </div>
-    @else
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-            @foreach($photos as $phIdx => $photo)
-                <div
-                    wire:key="photo-{{ $problemId }}-{{ $photo['id'] ?? $phIdx }}"
-                    class="p-2.5 bg-[#F9FAFC] rounded-md border border-[#D8DEE6] space-y-2 flex flex-col justify-between"
-                >
-                    <div class="space-y-1.5">
-                        <!-- Thumbnail Preview dengan Badge Simulasi (D12) -->
-                        <div class="relative group rounded overflow-hidden bg-[#E8ECF0] aspect-video flex items-center justify-center cursor-pointer border border-[#D8DEE6]"
-                             x-on:click="activeLightbox = '{{ $photo['filename'] ?? 'Foto Simulasi' }}'">
-                            @if(!empty($photo['thumbnail']) || !empty($photo['path']))
-                                <img
-                                    src="{{ $photo['thumbnail'] ?? $photo['path'] }}"
-                                    alt="{{ $photo['caption'] ?? $photo['filename'] ?? 'Foto' }}"
-                                    class="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
-                                />
-                            @endif
-                            <div class="flex flex-col items-center justify-center p-2 text-center text-[#536170] {{ (!empty($photo['thumbnail']) || !empty($photo['path'])) ? 'hidden' : '' }}">
-                                <svg class="w-8 h-8 text-[#8C9BAE]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                </svg>
-                                <span class="text-[10px] mt-1 font-mono text-[#536170] truncate max-w-full">
-                                    {{ $photo['filename'] ?? 'foto_temuan.jpg' }}
-                                </span>
-                            </div>
-
-                            <!-- Badge [SIMULASI] (UI10, D12) -->
-                            <span class="absolute top-1.5 left-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#FEF7E6] text-[#8A5B00] border border-[#F8DDA4]">
-                                [SIMULASI]
-                            </span>
-
-                            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-semibold gap-1">
-                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/>
-                                </svg>
-                                Perbesar
-                            </div>
-                        </div>
-
-                        <!-- Caption Input -->
-                        <div>
-                            <input
-                                type="text"
-                                wire:model="problems.{{ $problemIndex }}.photos.{{ $phIdx }}.caption"
-                                value="{{ $photo['caption'] ?? '' }}"
-                                placeholder="Keterangan foto / caption..."
-                                class="w-full text-[11px] rounded border border-[#D8DEE6] bg-white px-2 py-1.5 text-[#18212B] focus:outline-2 focus:outline-[#2459A6]"
-                            />
-                        </div>
-                    </div>
-
-                    <div class="flex items-center justify-between pt-1 border-t border-[#E8ECF0] text-[11px]">
-                        <span class="text-[#8C9BAE] font-mono truncate max-w-[120px]">
-                            {{ $photo['filename'] ?? 'file_simulasi.jpg' }}
-                        </span>
-                        <button
-                            type="button"
-                            wire:click="removeSimulationPhoto('{{ $problemId }}', '{{ $photo['id'] ?? $phIdx }}')"
-                            class="text-[#C5221F] hover:text-[#9A1613] font-medium"
-                        >
-                            Hapus
-                        </button>
-                    </div>
-                </div>
-            @endforeach
-        </div>
-    @endif
-
-    <!-- Lightbox Modal Preview (UI10) -->
-    <template x-if="activeLightbox">
-        <div
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4"
-            x-on:keydown.escape.window="activeLightbox = null"
-            x-on:click.self="activeLightbox = null"
-        >
-            <div class="bg-white rounded-lg max-w-2xl w-full p-4 space-y-3 shadow-xl">
-                <div class="flex items-center justify-between border-b border-[#D8DEE6] pb-2">
-                    <div class="flex items-center gap-2">
-                        <span class="text-xs font-bold text-[#18212B]" x-text="activeLightbox"></span>
-                        <span class="text-[10px] font-bold bg-[#FEF7E6] text-[#8A5B00] px-1.5 py-0.5 rounded border border-[#F8DDA4]">
-                            [SIMULASI]
-                        </span>
-                    </div>
+    <div class="photo-strip" data-testid="photo-strip-{{ $problemIndex }}">
+        @foreach($photos as $phIdx => $photo)
+            <div
+                class="photo-item"
+                wire:key="photo-{{ $problemClientId }}-{{ $photo['id'] ?? $phIdx }}"
+                style="display: inline-flex; flex-direction: column; align-items: flex-start; gap: 4px; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px; background: #f8fafc;"
+                data-testid="photo-item-{{ $problemIndex }}-{{ $phIdx }}"
+            >
+                <div style="position: relative;">
                     <button
                         type="button"
-                        x-on:click="activeLightbox = null"
-                        class="text-[#536170] hover:text-[#18212B] text-lg font-bold"
+                        class="icon-btn photo-thumb thumb"
+                        wire:click="openLightbox('{{ $photo['id'] }}')"
+                        aria-label="Lihat foto {{ $phIdx + 1 }}"
+                        title="Klik untuk memperbesar"
+                        style="width: 80px; height: 60px; overflow: hidden; padding: 0; border: 1px solid #cbd5e1; border-radius: 4px;"
                     >
-                        &times;
+                        <img
+                            src="{{ $photo['thumbnail_url'] ?? $photo['preview_url'] ?? '' }}"
+                            alt="{{ $photo['caption'] ?: ($photo['original_name'] ?? 'Foto problem') }}"
+                            style="width: 100%; height: 100%; object-fit: cover;"
+                        />
                     </button>
+                    @if(!empty($photo['is_staging']))
+                        <span style="position: absolute; top: 2px; left: 2px; font-size: 9px; font-weight: 700; background: #fef3c7; color: #92400e; padding: 1px 4px; border-radius: 3px; border: 1px solid #fde68a;">
+                            Draft
+                        </span>
+                    @endif
                 </div>
-                <div class="aspect-video bg-[#F5F6F8] rounded flex items-center justify-center border border-[#D8DEE6] text-[#536170] text-xs">
-                    <div class="text-center p-4">
-                        <svg class="w-12 h-12 text-[#8C9BAE] mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                        </svg>
-                        <p class="font-semibold text-[#18212B]" x-text="activeLightbox"></p>
-                        <p class="text-[11px] text-[#536170] mt-1">
-                            Preview resolusi besar foto temuan trial (Simulasi PRD Bagian 6 &amp; UI10).
-                        </p>
-                    </div>
-                </div>
-                <div class="flex justify-end">
+
+                <input
+                    type="text"
+                    class="input"
+                    style="font-size: 11px; padding: 3px 6px; width: 120px;"
+                    wire:model.live.debounce.300ms="problems.{{ $problemIndex }}.photos.{{ $phIdx }}.caption"
+                    placeholder="Keterangan foto…"
+                    aria-label="Caption foto {{ $phIdx + 1 }}"
+                    @if($isClosed) disabled @endif
+                    data-testid="photo-caption-{{ $problemIndex }}-{{ $phIdx }}"
+                />
+
+                @unless($isClosed)
                     <button
                         type="button"
-                        x-on:click="activeLightbox = null"
-                        class="px-4 py-1.5 text-xs font-semibold rounded bg-[#2459A6] text-white hover:bg-[#1D4785]"
+                        style="font-size: 11px; color: #ef4444; border: 0; background: none; cursor: pointer; padding: 2px 0; align-self: flex-end;"
+                        wire:click="removePhoto('{{ $problemClientId }}', '{{ $photo['id'] }}')"
+                        aria-label="Hapus foto {{ $phIdx + 1 }}"
+                        data-testid="remove-photo-{{ $problemIndex }}-{{ $phIdx }}"
                     >
-                        Tutup (Esc)
+                        Hapus
                     </button>
-                </div>
+                @endunless
             </div>
-        </div>
-    </template>
+        @endforeach
+
+        @unless($isClosed)
+            <label class="photo-add" data-testid="upload-photo-label-{{ $problemIndex }}" style="height: 100px; display: inline-flex; flex-direction: column; justify-content: center; align-items: center; min-width: 100px;">
+                <x-ui.icon name="camera" />
+                <span style="margin-top: 4px;">Tambah foto</span>
+                <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    multiple
+                    wire:model="pendingPhotos.{{ $problemClientId }}"
+                    aria-label="Upload foto problem {{ $problemIndex + 1 }}"
+                    data-testid="upload-photo-input-{{ $problemIndex }}"
+                />
+            </label>
+        @endunless
+    </div>
+
+    <div wire:loading wire:target="pendingPhotos.{{ $problemClientId }}" style="font-size: 11px; color: #2563eb; margin-top: 4px;">
+        Mengunggah berkas ke staging privat…
+    </div>
+
+    @error("photos.{$problemClientId}")
+        <div class="field-error" style="margin-top: 4px;">{{ $message }}</div>
+    @enderror
 </div>

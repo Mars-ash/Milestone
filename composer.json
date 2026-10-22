@@ -3,10 +3,14 @@
     "name": "mars-ash/progress-new-model",
     "type": "project",
     "description": "Aplikasi pendataan aktivitas pengembangan new model pengganti Microsoft Access.",
-    "keywords": ["laravel", "progress-new-model", "livewire"],
+    "keywords": [
+        "laravel",
+        "progress-new-model",
+        "livewire"
+    ],
     "license": "proprietary",
     "require": {
-        "php": "^8.3",
+        "php": "^8.4.1",
         "laravel/framework": "^13.17",
         "laravel/tinker": "^3.0",
         "livewire/livewire": "^4.0"
@@ -25,7 +29,11 @@
             "App\\": "app/",
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/"
-        }
+        },
+        "exclude-from-classmap": [
+            "/vendor/laravel/pint/",
+            "/vendor/league/flysystem/src/Local/"
+        ]
     },
     "autoload-dev": {
         "psr-4": {
@@ -37,8 +45,7 @@
             "composer install",
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
             "@php artisan key:generate",
-            "@php artisan migrate --force",
-            "npm install --ignore-scripts",
+            "npm ci",
             "npm run build"
         ],
         "dev": [
@@ -60,9 +67,7 @@
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
         ],
         "post-create-project-cmd": [
-            "@php artisan key:generate --ansi",
-            "@php -r \"file_exists('database/database.sqlite') || touch('database/database.sqlite');\"",
-            "@php artisan migrate --graceful --ansi"
+            "@php artisan key:generate --ansi"
         ],
         "pre-package-uninstall": [
             "Illuminate\\Foundation\\ComposerScripts::prePackageUninstall"

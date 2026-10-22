@@ -1,0 +1,5 @@
+Version: P02-20261015
+Source commit: d6450b5fa3b77cda1e5a75f7af335c93b9853f5d
+PHP tests: 116 passed; 708 assertions; PostgreSQL 18.6
+Task status: T01-T07 complete; T08-T09 partial (browser launch blocked by environment).
+See README.md and docs/progress/P02.md.

@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 // use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
+use Tests\PrototypeTestCase as TestCase;
 
 class ExampleTest extends TestCase
 {
@@ -16,7 +16,7 @@ class ExampleTest extends TestCase
 
         $response = $this->get('/');
 
-        $response->assertRedirect(route('prototype.index'));
+        $response->assertRedirect(route('app'));
 
         $prototypeResponse = $this->get(route('prototype.index'));
         $prototypeResponse->assertStatus(200);

@@ -22,6 +22,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Auto Login Single Admin (Local Development / Single-User Mode)
+    |--------------------------------------------------------------------------
+    |
+    | When enabled, requests without an active session are automatically
+    | logged in as the single admin user. Zero login friction for local use.
+    |
+    */
+
+    'auto_login' => env('AUTH_AUTO_LOGIN', false),
+
+    /*
+    |--------------------------------------------------------------------------
     | Authentication Guards
     |--------------------------------------------------------------------------
     |

@@ -5,7 +5,7 @@ namespace Tests\Feature;
 use App\Livewire\Prototype\ProgressForm;
 use App\Prototype\FakeStore;
 use Livewire\Livewire;
-use Tests\TestCase;
+use Tests\PrototypeTestCase as TestCase;
 
 class PrototypeNestedListsTest extends TestCase
 {
@@ -34,8 +34,7 @@ class PrototypeNestedListsTest extends TestCase
             ->set('activityDate', '2026-10-25')
             ->set('activity', 'Trial');
 
-        // 1. Tambah Problem 1
-        $component->call('addProblem');
+        // 1. Problem 1 sudah tersedia di awal form
         $problems = $component->get('problems');
         $this->assertCount(1, $problems);
         $prob1Id = $problems[0]['id'];
@@ -112,8 +111,7 @@ class PrototypeNestedListsTest extends TestCase
             ->set('activityDate', '2026-10-25')
             ->set('activity', 'Trial');
 
-        // Tambah 2 Next Action
-        $component->call('addNextAction');
+        // Tambah Next Action ke-2 (Next Action ke-1 sudah tersedia di awal)
         $component->call('addNextAction');
 
         $this->assertCount(2, $component->get('nextActions'));
@@ -126,7 +124,7 @@ class PrototypeNestedListsTest extends TestCase
         $component->set('nextActions.1.pic', 'Eko Lab CMM');
 
         // Pastikan problems tetap kosong (tidak tertukar)
-        $this->assertCount(0, $component->get('problems'));
+        $this->assertCount(1, $component->get('problems'));
 
         // Hapus salah satu next action
         $na1Id = $component->get('nextActions')[0]['id'];
@@ -146,8 +144,7 @@ class PrototypeNestedListsTest extends TestCase
             ->set('activityDate', '2026-10-25')
             ->set('activity', 'Sent Sample');
 
-        // Tambah 2 Feedback
-        $component->call('addFeedback');
+        // Tambah Feedback ke-2 (Feedback ke-1 sudah tersedia di awal)
         $component->call('addFeedback');
 
         $this->assertCount(2, $component->get('feedbacks'));

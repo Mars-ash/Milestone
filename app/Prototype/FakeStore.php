@@ -181,6 +181,15 @@ class FakeStore
 
         $existing = $existingIndex !== null ? $projects[$existingIndex] : [];
 
+        $dateValue = static function (string $key, ?string $legacyKey = null) use ($data, $existing): ?string {
+            if (array_key_exists($key, $data)) {
+                return $data[$key] === '' ? null : $data[$key];
+            }
+
+            return $existing[$key]
+                ?? ($legacyKey !== null ? ($existing[$legacyKey] ?? null) : null);
+        };
+
         // Build normalized record according to Section 15 of PRD (23 active fields)
         $record = [
             'id' => $id,
@@ -190,26 +199,26 @@ class FakeStore
             'customer' => $data['customer'] ?? $existing['customer'] ?? null,
             'model' => $data['model'] ?? $existing['model'] ?? null,
             'no_doc' => $data['no_doc'] ?? $existing['no_doc'] ?? null,
-            'date_receive' => $data['date_receive'] ?? $existing['date_receive'] ?? null,
+            'date_receive' => $dateValue('date_receive'),
             'material' => $data['material'] ?? $existing['material'] ?? null,
             'spec' => $data['spec'] ?? $existing['spec'] ?? null,
             'material_thickness_raw' => $data['material_thickness_raw'] ?? $existing['material_thickness_raw'] ?? null,
             'material_width_raw' => $data['material_width_raw'] ?? $existing['material_width_raw'] ?? null,
             'process' => $data['process'] ?? $existing['process'] ?? null,
-            't0_target' => $data['t0_target'] ?? $existing['t0_target'] ?? $existing['t0_target_date'] ?? null,
-            't0_actual' => $data['t0_actual'] ?? $existing['t0_actual'] ?? $existing['t0_actual_date'] ?? null,
-            't0_target_date' => $data['t0_target'] ?? $existing['t0_target'] ?? $existing['t0_target_date'] ?? null,
-            't0_actual_date' => $data['t0_actual'] ?? $existing['t0_actual'] ?? $existing['t0_actual_date'] ?? null,
-            'plan_start' => $data['plan_start'] ?? $existing['plan_start'] ?? null,
-            'plan_finish' => $data['plan_finish'] ?? $existing['plan_finish'] ?? null,
-            'actual_start' => $data['actual_start'] ?? $existing['actual_start'] ?? null,
-            'actual_finish' => $data['actual_finish'] ?? $existing['actual_finish'] ?? null,
-            'event_1' => $data['event_1'] ?? $existing['event_1'] ?? $existing['event_1_date'] ?? null,
-            'event_2' => $data['event_2'] ?? $existing['event_2'] ?? $existing['event_2_date'] ?? null,
-            'event_3' => $data['event_3'] ?? $existing['event_3'] ?? $existing['event_3_date'] ?? null,
-            'event_1_date' => $data['event_1'] ?? $existing['event_1'] ?? $existing['event_1_date'] ?? null,
-            'event_2_date' => $data['event_2'] ?? $existing['event_2'] ?? $existing['event_2_date'] ?? null,
-            'event_3_date' => $data['event_3'] ?? $existing['event_3'] ?? $existing['event_3_date'] ?? null,
+            't0_target' => $dateValue('t0_target', 't0_target_date'),
+            't0_actual' => $dateValue('t0_actual', 't0_actual_date'),
+            't0_target_date' => $dateValue('t0_target', 't0_target_date'),
+            't0_actual_date' => $dateValue('t0_actual', 't0_actual_date'),
+            'plan_start' => $dateValue('plan_start'),
+            'plan_finish' => $dateValue('plan_finish'),
+            'actual_start' => $dateValue('actual_start'),
+            'actual_finish' => $dateValue('actual_finish'),
+            'event_1' => $dateValue('event_1', 'event_1_date'),
+            'event_2' => $dateValue('event_2', 'event_2_date'),
+            'event_3' => $dateValue('event_3', 'event_3_date'),
+            'event_1_date' => $dateValue('event_1', 'event_1_date'),
+            'event_2_date' => $dateValue('event_2', 'event_2_date'),
+            'event_3_date' => $dateValue('event_3', 'event_3_date'),
             'dh' => $data['dh'] ?? $existing['dh'] ?? null,
             'size' => $data['size'] ?? $existing['size'] ?? null,
             'qty' => $data['qty'] ?? $existing['qty'] ?? null,
@@ -289,11 +298,14 @@ class FakeStore
         // Filter by search keyword (JO, Part No, Part Name, Customer, Notes, Problems)
         if (! empty($filters['search'])) {
             $keyword = strtolower(trim($filters['search']));
-            $progresses = array_filter($progresses, function ($p) use ($keyword) {
+            $progresses = array_filter($progresses, function ($p) use ($keyword, $filters) {
                 $project = static::findProject($p['project_id']);
                 $joNo = strtolower($project['jo_no'] ?? '');
                 $partNo = strtolower($project['part_no'] ?? '');
                 $partName = strtolower($project['part_name'] ?? '');
+                if (! empty($filters['identity_only'])) {
+                    return str_contains(implode(' ', [$joNo, $partNo, $partName]), $keyword);
+                }
                 $customer = strtolower($project['customer'] ?? '');
                 $notes = strtolower($p['notes'] ?? '');
 
@@ -316,13 +328,28 @@ class FakeStore
             });
         }
 
+        // Filter by from date (YYYY-MM-DD)
+        if (! empty($filters['from'])) {
+            $progresses = array_filter($progresses, function ($p) use ($filters) {
+                return ! empty($p['activity_date']) && $p['activity_date'] >= $filters['from'];
+            });
+        }
+
+        // Filter by to date (YYYY-MM-DD)
+        if (! empty($filters['to'])) {
+            $progresses = array_filter($progresses, function ($p) use ($filters) {
+                return ! empty($p['activity_date']) && $p['activity_date'] <= $filters['to'];
+            });
+        }
+
         // Filter by PIC and PIC Role (FR18, AT24) - Guarantees unique progress records
         if (! empty($filters['pic'])) {
             $picKw = strtolower(trim($filters['pic']));
-            $role = strtolower(trim($filters['pic_role'] ?? 'progress'));
+            $role = strtolower(trim($filters['pic_role'] ?? 'all'));
 
             $progresses = array_filter($progresses, function ($p) use ($picKw, $role) {
                 $matchProgress = str_contains(strtolower($p['pic_progress'] ?? ''), $picKw);
+                $matchCustomer = str_contains(strtolower($p['pic_customer'] ?? ''), $picKw);
 
                 $matchCorrective = false;
                 foreach ($p['problems'] ?? [] as $prob) {
@@ -352,11 +379,12 @@ class FakeStore
 
                 return match ($role) {
                     'progress' => $matchProgress,
-                    'corrective_action' => $matchCorrective,
-                    'next_action' => $matchNextAction,
+                    'customer' => $matchCustomer,
+                    'corrective', 'corrective_action' => $matchCorrective,
+                    'next', 'next_action' => $matchNextAction,
                     'feedback' => $matchFeedback,
-                    'all' => $matchProgress || $matchCorrective || $matchNextAction || $matchFeedback,
-                    default => $matchProgress,
+                    'all' => $matchProgress || $matchCustomer || $matchCorrective || $matchNextAction || $matchFeedback,
+                    default => $matchProgress || $matchCustomer,
                 };
             });
         }
@@ -699,12 +727,12 @@ class FakeStore
 
         $draftCount = count($drafts);
 
-        $now = \Illuminate\Support\Carbon::now('Asia/Jakarta');
+        $now = \Illuminate\Support\Carbon::now('Asia/Jakarta')->locale('id');
         $targetYm = $yearMonth ?: $now->format('Y-m');
 
         if ($yearMonth) {
             $parsed = \Illuminate\Support\Carbon::createFromFormat('Y-m', $yearMonth, 'Asia/Jakarta');
-            $monthLabel = $parsed ? $parsed->translatedFormat('F Y') : $yearMonth;
+            $monthLabel = $parsed ? $parsed->locale('id')->translatedFormat('F Y') : $yearMonth;
         } else {
             $monthLabel = $now->translatedFormat('F Y');
         }
@@ -808,6 +836,7 @@ class FakeStore
                 'content' => $fb['content'] ?? '',
                 'pic' => $fb['pic'] ?? '',
                 'order' => $fb['order'] ?? ($i + 1),
+                'files' => $fb['files'] ?? [],
             ];
         }
 

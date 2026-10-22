@@ -1,0 +1,40 @@
+{
+  "title": "Progress New Model — UI yang disetujui",
+  "snapshot_date": "2026-10-14",
+  "approval_message_time": "2026-10-14T10:25:06+07:00",
+  "source_commit": "1ca17d6a58dfd59cf0c7ef4bb5bd58d90ea22002",
+  "site_version_number": 6,
+  "approved_reference_url": "https://progress-new-model-ui.quick-panda-6120.chatgpt.site",
+  "target_stack": [
+    "Laravel",
+    "PostgreSQL",
+    "Blade",
+    "Livewire",
+    "Tailwind"
+  ],
+  "reference_stack": "Buildless HTML / CSS / JavaScript; data contoh di browser",
+  "reference_is_production_backend": false,
+  "browser_visual_qa_completed_by_author": false,
+  "files": [
+    {
+      "path": "reference/app.js",
+      "bytes": 43220,
+      "sha256": "5386e625b41c9b9ece4cf253eab57009a6d31ca897ad60087b235934bfa0cebe"
+    },
+    {
+      "path": "reference/index.html",
+      "bytes": 831,
+      "sha256": "f48438b83bfc8217297d9e54f7d308fe8ade0f8959ffa7b128858df250bf84e6"
+    },
+    {
+      "path": "reference/state.js",
+      "bytes": 8195,
+      "sha256": "8d9c57f988f384c6089215da286ec858fc1fcd3f91b96e90ae90bf8817407940"
+    },
+    {
+      "path": "reference/styles.css",
+      "bytes": 34199,
+      "sha256": "390684822aa638eefbf979f0e12aab6afccc4705ce035f21fae23942aa0d0aff"
+    }
+  ]
+}

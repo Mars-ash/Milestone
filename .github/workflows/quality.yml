@@ -1,0 +1,43 @@
+name: Foundation quality gate
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: progress_new_model_test
+          POSTGRES_USER: progress_test
+          POSTGRES_PASSWORD: ci-test-only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U progress_test -d progress_new_model_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: progress_new_model_test
+      DB_USERNAME: progress_test
+      DB_PASSWORD: ci-test-only
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_pgsql, mbstring, dom, xml, xmlwriter, curl, zip, intl
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: composer install --no-interaction --prefer-dist
+      - run: cp .env.testing.example .env.testing
+      - run: php artisan key:generate --env=testing
+      - run: composer validate --strict
+      - run: composer check-platform-reqs
+      - run: npm ci
+      - run: npm run build
+      - run: php artisan view:cache --env=testing
+      - run: php artisan test

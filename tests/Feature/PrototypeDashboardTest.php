@@ -5,7 +5,7 @@ namespace Tests\Feature;
 use App\Livewire\Prototype\Dashboard;
 use App\Prototype\FakeStore;
 use Livewire\Livewire;
-use Tests\TestCase;
+use Tests\PrototypeTestCase as TestCase;
 
 class PrototypeDashboardTest extends TestCase
 {
@@ -14,6 +14,7 @@ class PrototypeDashboardTest extends TestCase
         parent::setUp();
         $this->withoutVite();
         FakeStore::reset();
+        session()->forget('prototype_ui_filters');
     }
 
     protected function tearDown(): void
@@ -193,6 +194,7 @@ class PrototypeDashboardTest extends TestCase
             ->assertDontSee('Tidak ada progress Open');
 
         // Case B: Default Open empty state
+        session()->forget('prototype_ui_filters');
         // Close all open progresses first
         foreach (FakeStore::getProgresses(['status' => 'Open']) as $p) {
             FakeStore::closeProgress($p['id']);

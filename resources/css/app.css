@@ -6,7 +6,7 @@
 @source '../../app/Livewire/**/*.php';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-sans: Inter, "Segoe UI", Arial, sans-serif;
 
     /* Palette PRD Bagian 6 (UI05) */
     --color-canvas: #F5F6F8;
@@ -37,26 +37,5 @@
     --color-danger-light: #FDF2F1;
 }
 
-@layer base {
-    body {
-        background-color: var(--color-canvas);
-        color: var(--color-text-main);
-        font-family: var(--font-sans);
-        font-size: 14px;
-        line-height: 1.5;
-        -webkit-font-smoothing: antialiased;
-    }
+@import './reference.css';
 
-    /* Target sentuh & input mobile min 16px untuk cegah auto-zoom iOS */
-    @media (max-width: 640px) {
-        input, select, textarea {
-            font-size: 16px !important;
-        }
-    }
-
-    /* Keyboard accessibility visible focus */
-    :focus-visible {
-        outline: 2px solid var(--color-primary);
-        outline-offset: 2px;
-    }
-}

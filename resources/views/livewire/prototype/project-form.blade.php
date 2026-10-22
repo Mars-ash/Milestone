@@ -197,6 +197,17 @@
                     />
                 </div>
 
+                <!-- Pitch Raw -->
+                <div>
+                    <label class="block text-xs font-semibold text-[#18212B] mb-1">Material Pitch</label>
+                    <input
+                        wire:model="material_pitch_raw"
+                        type="text"
+                        placeholder="Contoh: 45.0 mm"
+                        class="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-[#D8DEE6] rounded-md text-[#18212B] focus:outline-none focus:ring-1 focus:ring-[#2459A6] min-h-[40px]"
+                    />
+                </div>
+
                 <!-- Process Master -->
                 <div>
                     <label class="block text-xs font-semibold text-[#18212B] mb-1">Process Master</label>

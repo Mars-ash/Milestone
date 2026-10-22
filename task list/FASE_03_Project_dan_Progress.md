@@ -48,14 +48,14 @@ Baca PRD_Progress_New_Model.md: Bagian 4, 5, 8, 15 sampai 17; FR01 sampai FR06.
 
 ## Daftar task
 
-- [ ] P03-T01 Implementasikan form dan Simpan master
-- [ ] P03-T02 Implementasikan daftar dan detail project
-- [ ] P03-T03 Implementasikan pencarian JO dan autofill terbaru
-- [ ] P03-T04 Implementasikan editor progress dasar yang seragam
-- [ ] P03-T05 Implementasikan Simpan progress dasar secara aman
-- [ ] P03-T06 Implementasikan daftar dan detail progress
-- [ ] P03-T07 Tangani validasi dan legacy incomplete pada editor
-- [ ] P03-T08 Review fungsi dan UI fase master progress
+- [x] P03-T01 Implementasikan form dan Simpan master
+- [x] P03-T02 Implementasikan daftar dan detail project
+- [x] P03-T03 Implementasikan pencarian JO dan autofill terbaru
+- [x] P03-T04 Implementasikan editor progress dasar yang seragam
+- [x] P03-T05 Implementasikan Simpan progress dasar secara aman
+- [x] P03-T06 Implementasikan daftar dan detail progress
+- [x] P03-T07 Tangani validasi dan legacy incomplete pada editor
+- [x] P03-T08 Review fungsi dan UI fase master progress
 
 ### P03-T01 Implementasikan form dan Simpan master
 

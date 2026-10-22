@@ -1,0 +1,13 @@
+/* Dedicated prototype entry: match reference without Tailwind Preflight. */
+@layer theme, base, components, utilities;
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+@import './reference.css';
+@source '../views/**/*.blade.php';
+@source '../../app/Livewire/**/*.php';
+
+/* Reference uses buttons. Laravel navigation uses anchors with the same style. */
+a.btn { color: var(--ink); }
+a.btn.primary { color: #fff; }
+a.btn.ghost { color: var(--muted); }
+a.btn.text { color: var(--blue); }
